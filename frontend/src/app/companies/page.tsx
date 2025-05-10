@@ -195,17 +195,71 @@ useEffect(() => {
         company={selectedCompany}
         onSave={async (data: CompanyFormValues) => {
           try {
+            let logoImagePath = data.logo;
+            let signatureImagePath = data.authorized_signature_image;
+
+            // Upload logo image if a file is selected
+            if (data.logoFile) {
+              const formData = new FormData();
+              formData.append('file', data.logoFile);
+              try {
+                const uploadResponse = await fetch(`${API_BASE_URL}/upload/image`, {
+                  method: 'POST',
+                  body: formData,
+                });
+                if (!uploadResponse.ok) {
+                  throw new Error(`Error uploading logo image: ${uploadResponse.statusText}`);
+                }
+                const uploadResult = await uploadResponse.json();
+                logoImagePath = uploadResult.path; // Corrected to use 'path'
+              } catch (uploadError: any) {
+                console.error("Error uploading logo image:", uploadError);
+                // TODO: Show error toast for upload failure
+                throw uploadError; // Re-throw to prevent saving company with missing image
+              }
+            }
+
+            // Upload authorized signature image if a file is selected
+            if (data.authorizedSignatureFile) {
+              const formData = new FormData();
+              formData.append('file', data.authorizedSignatureFile);
+              try {
+                const uploadResponse = await fetch(`${API_BASE_URL}/upload/image`, {
+                  method: 'POST',
+                  body: formData,
+                });
+                if (!uploadResponse.ok) {
+                  throw new Error(`Error uploading authorized signature image: ${uploadResponse.statusText}`);
+                }
+                const uploadResult = await uploadResponse.json();
+                signatureImagePath = uploadResult.path; // Corrected to use 'path'
+              } catch (uploadError: any) {
+                console.error("Error uploading authorized signature image:", uploadError);
+                // TODO: Show error toast for upload failure
+                throw uploadError; // Re-throw to prevent saving company with missing image
+              }
+            }
+
+            const companyDataToSave = {
+              ...data,
+              logo: logoImagePath,
+              authorized_signature_image: signatureImagePath,
+              // Remove file objects before sending to company API
+              logoFile: undefined,
+              authorizedSignatureFile: undefined,
+            };
+
             if (selectedCompany) {
               // Update existing company
               const updatedCompanyData = {
                 ...selectedCompany,
-                ...data,
+                ...companyDataToSave,
               };
               await updateCompany(updatedCompanyData);
               // TODO: Show success toast
             } else {
               // Add new company
-              await addCompany(data);
+              await addCompany(companyDataToSave);
               // TODO: Show success toast
             }
             setIsFormModalOpen(false);

@@ -19,6 +19,8 @@ services:
       DATABASE_URL: postgresql://billinguser:billingpass@db:5432/billingdb
     depends_on:
       - db
+    volumes:
+      - ./backend/static/images:/app/backend/static/images
 
   frontend:
     build: ./frontend
