@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Delivery Order</title>
+  <style>
+    /* A4 page settings */
+    @page { size: A4; margin: 20mm; }
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      line-height: 1.3;
+      color: #000;
+    }
+    .container {
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .text-center { text-align: center; }
+    .text-right  { text-align: right; }
+    .mt-8 { margin-top: 8px; }
+    .mt-16 { margin-top: 16px; }
+    .mb-0 { margin-bottom: 0; }
+    .p-4 { padding: 4px; }
+    .p-8 { padding: 8px; }
+    .border    { border: 1px solid #000; }
+    .border-0  { border: none; }
+    .bg-yellow { background-color: #fff9c4; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #000; padding: 6px; vertical-align: top; }
+    th { font-weight: bold; }
+    ol { padding-left: 16px; margin: 4px 0; }
+    .signature {
+      float: right;
+      text-align: center;
+      margin-top: 32px;
+    }
+    /* Logo sizing */
+    .logo { width: 80px; }
+    /* Sanskrit motto */
+    .motto { font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Top header row: logo / motto / tax info -->
+    <table class="border-0">
+      <tr class="border-0">
+        <td class="border-0" style="width:20%">
+          <img src="{{ seller.logo_url | default('') }}" alt="Logo" class="logo">
+        </td>
+        <td class="border-0 text-center motto">
+          &#x0950; ॐ राणी सतये नमः &#x0950;
+        </td>
+        <td class="border-0 text-right" style="width:30%; font-size:12px;">
+          <div>GSTIN : {{ seller.gstin    | default('N/A') }}</div>
+          <div>PAN   : {{ seller.pan      | default('N/A') }}</div>
+          <div>TAN   : {{ seller.tan      | default('N/A') }}</div>
+        </td>
+      </tr>
+    </table>
+
+   <!-- Company banner -->
+<div class="bg-yellow border text-center p-8 mt-4">
+    <h2 class="mb-0">{{ seller.name | default('Shree Balaji Sugar Company') }}</h2>
+  </div>
+  
+  <!-- Address -->
+  <p class="text-center mt-4 mb-0">
+    {{ seller.address  | default('Address not provided') }}<br>
+    Phone: {{ seller.phone | default('N/A') }} | Email: {{ seller.email | default('N/A') }}
+  </p>
+  
+  <!-- Title -->
+  <h3 class="text-center mt-8 mb-0">DELIVERY ORDER</h3>
+  
+  <!-- DO info -->
+  <table class="mt-4">
+    <tr class="bg-yellow">
+      <td class="border p-8" style="width:50%;">DO No: {{ order.no | default('N/A') }}</td>
+      <td class="border p-8 text-right" style="width:50%;">DO Date: {{ order.date | default('N/A') }}</td>
+    </tr>
+  </table>
+  
+  <!-- To & Truck -->
+  <table class="mt-4">
+    <tr>
+      <td class="no-border" style="width:65%; vertical-align: top;">
+        <strong>To:</strong><br>
+        {{ buyer.name    | default('Unknown') }}<br>
+        {{ buyer.address | default('Address not provided') }}<br>
+        Dear Sir,
+      </td>
+      <td class="border bg-yellow p-8 text-center" style="width:35%; vertical-align: middle;">
+        <strong>Truck No:</strong><br>
+        {{ order.truck_no | default('N/A') }}
+      </td>
+    </tr>
+  </table>
+  
+  <!-- Instruction -->
+  <p class="mt-4" style="margin-left: 15px;">
+    On presentation of this delivery order, please give delivery of the following sugar against full payment. 
+    The sugar to be lifted and paid for till {{ order.due_date | default('N/A') }}.
+  </p>
+  
+  <!-- Billed/Consignee -->
+  <table class="mt-4">
+    <tr class="bg-yellow">
+      <th>Billed to - Place of Supply</th>
+      <th>Consignee (Shipped to address of Delivery)</th>
+    </tr>
+    <tr>
+      <td>
+        <strong>{{ buyer.name | default('Unknown') }}</strong><br>
+        {{ buyer.address | default('Address not provided') }}<br>
+        GSTIN: {{ buyer.gstin | default('N/A') }}<br>
+        Phone: {{ buyer.phone | default('N/A') }}<br>
+        TAN:   {{ buyer.tan   | default('N/A') }}<br>
+        Under 194(Q): {{ buyer.under_194q | default('No') }}
+      </td>
+      <td>
+        <strong>{{ consignee.name | default(buyer.name) }}</strong><br>
+        {{ consignee.address | default(buyer.address) }}<br>
+        GSTIN: {{ consignee.gstin | default(buyer.gstin) }}<br>
+        Phone: {{ consignee.phone | default(buyer.phone) }}<br>
+        TAN:   {{ consignee.tan   | default(buyer.tan) }}<br>
+        FSSAI: {{ consignee.fssai  | default('-') }}
+      </td>
+    </tr>
+  </table>
+  
+  <!-- Product table -->
+  <table class="mt-4">
+    <tr class="bg-yellow">
+      <th>Mill / Bargain No</th>
+      <th>Quality</th>
+      <th>Qty (Quintals)</th>
+      <th>Rate</th>
+      <th>Amount</th>
+    </tr>
+    {% for item in items %}
+    <tr>
+      <td>{{ item.mill ~ ' / ' ~ item.bargain_no | default('N/A') }}</td>
+      <td>{{ item.quality | default('N/A') }}</td>
+      <td class="text-center">{{ item.qty | default(0) }}</td>
+      <td class="text-right">{{ item.rate | default(0) }}</td>
+      <td class="text-right">{{ item.amount | default(0) }}</td>
+    </tr>
+    {% endfor %}
+    <tr>
+      <td colspan="3"></td>
+      <td>Insurance Charges: {{ charges.insurance | default(0) }}</td>
+      <td class="text-right">{{ charges.insurance_amt | default(0) }}</td>
+    </tr>
+    <tr>
+      <td colspan="3"></td>
+      <td>Penalty: {{ charges.penalty | default(0) }}</td>
+      <td class="text-right">{{ charges.penalty_amt | default(0) }}</td>
+    </tr>
+    <tr>
+      <td colspan="3"></td>
+      <td>Less: TDS % {{ charges.tds_pct | default(0) }}</td>
+      <td class="text-right">{{ charges.tds_amt | default(0) }}</td>
+    </tr>
+    <tr>
+      <td colspan="3"></td>
+      <td>GST % {{ charges.gst_pct | default(0) }}</td>
+      <td class="text-right">{{ charges.gst_amt | default(0) }}</td>
+    </tr>
+    <tr class="bg-yellow">
+      <td colspan="3"></td>
+      <td><strong>Total Amount</strong></td>
+      <td class="text-right"><strong>{{ charges.total | default(0) }}</strong></td>
+    </tr>
+  </table>
+  
+  <!-- Payment -->
+  <table class="mt-4">
+    <tr class="bg-yellow">
+      <th>Payment Date</th>
+      <th>UTR No</th>
+      <th>UTR Amt</th>
+      <th>Adjust Amt</th>
+    </tr>
+    <tr>
+      <td>{{ payment.date | default('') }}</td>
+      <td>{{ payment.utr_no | default('') }}</td>
+      <td class="text-right">{{ payment.utr_amount | default(0) }}</td>
+      <td class="text-right">{{ payment.adjust_amount | default(0) }}</td>
+    </tr>
+  </table>
+  
+  <!-- Remarks -->
+  <div class="mt-4">
+    <strong>Remarks:</strong> NOTE:
+    <ol>
+      {% for remark in remarks %}
+        <li>{{ remark }}</li>
+      {% endfor %}
+    </ol>
+  </div>
+  
+  <div class="signature">
+    <div>{{ seller.name | default('Shree Balaji Sugar Company') }}</div>
+    <div style="margin-top:24px;">
+      Signature<br>Authorized Signatory
+    </div>
+  </div>
+  </div>
+</body>
+</html>
+
