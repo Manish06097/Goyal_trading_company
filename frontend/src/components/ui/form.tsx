@@ -160,7 +160,6 @@ function FormMessage({ className, children, ...props }: React.ComponentProps<"p"
       )}
       {...props}
     >
-      {error ? body : isValid ? "Looks good!" : null} {/* Show "Looks good!" for valid fields */}
     </p>
   );
 }

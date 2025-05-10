@@ -24,9 +24,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 // Define form schema (placeholder)
 const formSchema = z.object({
-  name: z.string().min(2, {
-    message: "Name must be at least 2 characters.",
-  }),
+  name: z.string().optional(),
   logo: z.string().optional(), // Keep this for displaying existing logo URL if editing
   logoFile: z.any().optional(), // Add field for the file object
   gst_number: z.string().optional(),
@@ -43,7 +41,7 @@ export type CompanyFormValues = z.infer<typeof formSchema>;
 
 interface Company {
   id?: number;
-  name: string;
+  name?: string; // Made name optional
   logo?: string;
   gst_number?: string;
   pan_number?: string;

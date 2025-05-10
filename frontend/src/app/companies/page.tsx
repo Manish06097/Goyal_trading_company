@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import CompanyFormModal, { CompanyFormValues } from "@/components/companies/CompanyFormModal";
 import DeleteCompanyDialog from "@/components/companies/DeleteCompanyDialog";
@@ -31,7 +31,7 @@ import Toast from "@/components/ui/toast";
 
 interface Company {
   id: number;
-  name: string;
+  name?: string; // Made name optional
   logo?: string;
   gst_number?: string;
   pan_number?: string;
@@ -173,7 +173,7 @@ export default function CompanyManagementPage() {
   // Filter and paginate companies
   const filteredCompanies = companies.filter(company => {
     const matchesSearch = searchTerm === '' ||
-      company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (company.name && company.name.toLowerCase().includes(searchTerm.toLowerCase())) || // Added check for company.name
       (company.gst_number && company.gst_number.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (company.email && company.email.toLowerCase().includes(searchTerm.toLowerCase()));
       // Add other fields to search as needed
@@ -250,8 +250,8 @@ export default function CompanyManagementPage() {
                   </TableHeader>
                   <TableBody>
                     {paginatedCompanies.map(company => (
-                      <>
-                        <TableRow key={company.id} className={`even:bg-gray-50 hover:bg-gray-100 ${expandedRow === company.id ? 'border-b-0' : ''}`}> {/* Added zebra-striping and hover */}
+                      <React.Fragment key={company.id}>
+                        <TableRow className={`even:bg-gray-50 hover:bg-gray-100 ${expandedRow === company.id ? 'border-b-0' : ''}`}> {/* Added zebra-striping and hover */}
                           <TableCell className="w-[40px]"><input type="checkbox" /></TableCell> {/* Checkbox cell */}
                           <TableCell>{company.name}</TableCell>
                           <TableCell>
@@ -313,7 +313,7 @@ export default function CompanyManagementPage() {
                           </TableCell>
                         </TableRow>
                         {expandedRow === company.id && (
-                          <TableRow className="md:hidden"> {/* This row is only visible on small screens when expanded */}
+                          <TableRow key={`${company.id}-expanded`} className="md:hidden"> {/* This row is only visible on small screens when expanded */}
                             <TableCell colSpan={11}> {/* Span across all columns, adjusted for new checkbox column */}
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-2">
                                 {company.address && (
@@ -359,7 +359,7 @@ export default function CompanyManagementPage() {
                             </TableCell>
                           </TableRow>
                         )}
-                      </>
+                      </React.Fragment>
                     ))}
                   </TableBody>
                 </Table>
@@ -464,10 +464,12 @@ export default function CompanyManagementPage() {
               };
               await updateCompany(updatedCompanyData);
               setNotification({ message: 'Company updated successfully!', type: 'success' });
+
             } else {
               // Add new company
               await addCompany(companyDataToSave);
               setNotification({ message: 'Company added successfully!', type: 'success' });
+
             }
             setIsFormModalOpen(false);
             setSelectedCompany(null);
