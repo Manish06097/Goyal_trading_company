@@ -21,7 +21,9 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogTitle, // Import DialogTitle
 } from "@/components/ui/dialog"; // Import Dialog components
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden"; // Import VisuallyHidden
 
 // Add imports for icons (assuming lucide-react)
 import { EditIcon, TrashIcon } from "lucide-react";
@@ -484,7 +486,8 @@ export default function CompanyManagementPage() {
       {/* Image Preview Dialog */}
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
         <DialogContent className="max-w-screen-md"> {/* Adjust max-width as needed */}
-          <img src={selectedImage || ''} alt="Preview" className="max-w-full max-h-[80vh] object-contain mx-auto" />
+          <VisuallyHidden><DialogTitle>Image Preview</DialogTitle></VisuallyHidden> {/* Added DialogTitle for accessibility */}
+          <img src={selectedImage || undefined} alt="Preview" className="max-w-full max-h-[80vh] object-contain mx-auto" /> {/* Changed src={null} to src={undefined} */}
         </DialogContent>
       </Dialog>
 
