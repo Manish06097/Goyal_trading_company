@@ -150,13 +150,19 @@ useEffect(() => {
             <p className="mt-2">Loading companies...</p>
           </div>
         ) : ( // Render table even if companies list is empty
-          <Table>
-            <TableHeader>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Logo</TableHead>
                 <TableHead>GST Number</TableHead>
+                <TableHead>PAN Number</TableHead>
+                <TableHead>TAN Number</TableHead>
+                <TableHead>Address</TableHead>
                 <TableHead>Phone Number</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Authorized Signature</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -164,9 +170,22 @@ useEffect(() => {
               {companies.map(company => (
                 <TableRow key={company.id}>
                   <TableCell>{company.name}</TableCell>
+                  <TableCell>
+                    {company.logo && (
+                      <img src={`${API_BASE_URL}/images/${company.logo.split('/').pop()}`} alt={`${company.name} Logo`} className="h-10 w-auto object-contain" />
+                    )}
+                  </TableCell>
                   <TableCell>{company.gst_number}</TableCell>
+                  <TableCell>{company.pan_number}</TableCell>
+                  <TableCell>{company.tan_number}</TableCell>
+                  <TableCell>{company.address}</TableCell>
                   <TableCell>{company.phone_number}</TableCell>
                   <TableCell>{company.email}</TableCell>
+                   <TableCell>
+                    {company.authorized_signature_image && (
+                      <img src={`${API_BASE_URL}/images/${company.authorized_signature_image.split('/').pop()}`} alt={`${company.name} Authorized Signature`} className="h-10 w-auto object-contain" />
+                    )}
+                  </TableCell>
                   <TableCell className="flex gap-2">
                     <Button size="sm" variant="ghost" onClick={() => { setSelectedCompany(company); setIsFormModalOpen(true); }}>
                       <EditIcon className="h-4 w-4" />
@@ -178,7 +197,8 @@ useEffect(() => {
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
+            </Table>
+          </div>
         )}
 
         {error && (
