@@ -1,9 +1,11 @@
 # app/routes.py
 import os
+import uuid
+import shutil
 from io import BytesIO
 
-from fastapi import APIRouter, Request, Depends, HTTPException, status
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Request, Depends, HTTPException, status, UploadFile, File
+from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from weasyprint import HTML
@@ -12,6 +14,9 @@ from . import models, schemas, database
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
+
+# Directory to store uploaded images
+IMAGE_DIR = "backend/static/images"
 
 def get_db():
     db = database.SessionLocal()
@@ -101,3 +106,29 @@ async def generate_invoice(request: Request, invoice_data: dict):
         media_type="application/pdf",
         headers={"Content-Disposition": "inline; filename=invoice.pdf"},
     )
+
+@router.post("/upload/image")
+async def upload_image(file: UploadFile = File(...)):
+    try:
+        # Create the directory if it doesn't exist
+        os.makedirs(IMAGE_DIR, exist_ok=True)
+
+        # Generate a unique filename
+        file_extension = os.path.splitext(file.filename)[1]
+        unique_filename = f"{uuid.uuid4()}{file_extension}"
+        file_path = os.path.join(IMAGE_DIR, unique_filename)
+
+        # Save the uploaded file
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        return {"filename": unique_filename, "path": file_path}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error uploading image: {e}")
+
+@router.get("/images/{image_path}")
+async def get_image(image_path: str):
+    file_path = os.path.join(IMAGE_DIR, image_path)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Image not found")
+    return FileResponse(file_path)
