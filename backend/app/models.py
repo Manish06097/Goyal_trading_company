@@ -20,3 +20,16 @@ class BillItem(Base):
     price = Column(Numeric(10, 2))
 
     bill = relationship("Bill", back_populates="items")
+
+class Company(Base):
+    __tablename__ = "companies"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    logo = Column(String)
+    gst_number = Column(String)
+    pan_number = Column(String)
+    tan_number = Column(String)
+    address = Column(String)
+    phone_number = Column(String)
+    email = Column(String)
+    authorized_signature_image = Column(String)

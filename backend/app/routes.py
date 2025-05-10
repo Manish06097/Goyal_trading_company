@@ -2,18 +2,72 @@
 import os
 from io import BytesIO
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
 from weasyprint import HTML
+
+from . import models, schemas, database
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
+
+def get_db():
+    db = database.SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 @router.get("/ping")
 def ping():
     return {"message": "pong"}
+
+
+@router.post("/companies/", response_model=schemas.Company)
+def create_company(company: schemas.CompanyCreate, db: Session = Depends(get_db)):
+    db_company = models.Company(**company.model_dump())
+    db.add(db_company)
+    db.commit()
+    db.refresh(db_company)
+    return db_company
+
+@router.get("/companies/", response_model=list[schemas.Company])
+def read_companies(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    companies = db.query(models.Company).offset(skip).limit(limit).all()
+    return companies
+
+@router.get("/companies/{company_id}", response_model=schemas.Company)
+def read_company(company_id: int, db: Session = Depends(get_db)):
+    company = db.query(models.Company).filter(models.Company.id == company_id).first()
+    if company is None:
+        raise HTTPException(status_code=404, detail="Company not found")
+    return company
+
+@router.put("/companies/{company_id}", response_model=schemas.Company)
+def update_company(company_id: int, company: schemas.CompanyUpdate, db: Session = Depends(get_db)):
+    db_company = db.query(models.Company).filter(models.Company.id == company_id).first()
+    if db_company is None:
+        raise HTTPException(status_code=404, detail="Company not found")
+
+    for key, value in company.model_dump(exclude_unset=True).items():
+        setattr(db_company, key, value)
+
+    db.commit()
+    db.refresh(db_company)
+    return db_company
+
+@router.delete("/companies/{company_id}", response_model=schemas.Company)
+def delete_company(company_id: int, db: Session = Depends(get_db)):
+    db_company = db.query(models.Company).filter(models.Company.id == company_id).first()
+    if db_company is None:
+        raise HTTPException(status_code=404, detail="Company not found")
+
+    db.delete(db_company)
+    db.commit()
+    return db_company
 
 
 @router.post("/api/invoice/generate")
