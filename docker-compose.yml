@@ -1,4 +1,9 @@
 version: "3.9"
+
+networks:
+  app_net:
+    driver: bridge
+
 services:
   db:
     image: postgres:15
@@ -8,30 +13,44 @@ services:
       POSTGRES_DB: billingdb
     volumes:
       - db_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    networks:
+      - app_net
+    healthcheck:
+    test: ["CMD", "pg_isready", "-U", "billinguser", "-d", "billingdb"]
+    interval: 5s
+    retries: 5
 
   backend:
-    build: ./backend
-    ports:
-      - "8000:8000"
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     environment:
+      # this must match the service name above
       DATABASE_URL: postgresql://billinguser:billingpass@db:5432/billingdb
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
-      - ./backend/static/images:/app/backend/static/images
+      - ./backend:/app
+      - static_images:/app/app/static/images
+    ports:
+      - "8000:8000"
+    networks:
+      - app_net
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     ports:
       - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
-    stdin_open: true
-    tty: true
     depends_on:
       - backend
+    networks:
+      - app_net
 
 volumes:
   db_data:
+  static_images:
