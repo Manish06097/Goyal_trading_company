@@ -135,24 +135,34 @@ function FormDescription({ className, ...props }: React.ComponentProps<"p">) {
   )
 }
 
-function FormMessage({ className, ...props }: React.ComponentProps<"p">) {
-  const { error, formMessageId } = useFormField()
-  const body = error ? String(error?.message ?? "") : props.children
+function FormMessage({ className, children, ...props }: React.ComponentProps<"p">) {
+  const { error, formMessageId, isDirty, isValidating } = useFormField();
+  const { errors, isSubmitted } = useFormState(); // Get form errors and isSubmitted from useFormState
+  const fieldError = errors[useFormField().name]; // Get specific field error
 
-  if (!body) {
-    return null
+  // Determine if the field is valid based on error presence and form state
+  const isValid = !fieldError && (isDirty || isSubmitted);
+
+  const body = error ? String(error?.message ?? "") : children;
+
+  if (!body && !isValid) { // Only render if there's a message or it's valid and dirty/submitted
+    return null;
   }
 
   return (
     <p
       data-slot="form-message"
       id={formMessageId}
-      className={cn("text-destructive text-sm", className)}
+      className={cn(
+        "text-sm mt-1", // Added margin-top
+        error ? "text-destructive" : isValid ? "text-green-600" : "", // Conditional text color
+        className
+      )}
       {...props}
     >
-      {body}
+      {error ? body : isValid ? "Looks good!" : null} {/* Show "Looks good!" for valid fields */}
     </p>
-  )
+  );
 }
 
 export {

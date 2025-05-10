@@ -1,10 +1,15 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
+import { cn } from "@/lib/utils";
 
-import { cn } from "@/lib/utils"
-
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+// Remove stray whitespace by filtering children to only valid React elements
+export function Table(
+  { className, children, ...props }: React.ComponentProps<"table">
+) {
+  const validChildren = React.Children.toArray(children).filter(
+    React.isValidElement
+  );
   return (
     <div
       data-slot="table-container"
@@ -14,32 +19,53 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
         data-slot="table"
         className={cn("w-full caption-bottom text-sm", className)}
         {...props}
-      />
+      >
+        {validChildren}
+      </table>
     </div>
-  )
+  );
 }
 
-function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
+export function TableHeader(
+  { className, children, ...props }: React.ComponentProps<"thead">
+) {
+  const validChildren = React.Children.toArray(children).filter(
+    React.isValidElement
+  );
   return (
     <thead
       data-slot="table-header"
       className={cn("[&_tr]:border-b", className)}
       {...props}
-    />
-  )
+    >
+      {validChildren}
+    </thead>
+  );
 }
 
-function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
+export function TableBody(
+  { className, children, ...props }: React.ComponentProps<"tbody">
+) {
+  const validChildren = React.Children.toArray(children).filter(
+    React.isValidElement
+  );
   return (
     <tbody
       data-slot="table-body"
       className={cn("[&_tr:last-child]:border-0", className)}
       {...props}
-    />
-  )
+    >
+      {validChildren}
+    </tbody>
+  );
 }
 
-function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
+export function TableFooter(
+  { className, children, ...props }: React.ComponentProps<"tfoot">
+) {
+  const validChildren = React.Children.toArray(children).filter(
+    React.isValidElement
+  );
   return (
     <tfoot
       data-slot="table-footer"
@@ -48,11 +74,18 @@ function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
         className
       )}
       {...props}
-    />
-  )
+    >
+      {validChildren}
+    </tfoot>
+  );
 }
 
-function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
+export function TableRow(
+  { className, children, ...props }: React.ComponentProps<"tr">
+) {
+  const validChildren = React.Children.toArray(children).filter(
+    React.isValidElement
+  );
   return (
     <tr
       data-slot="table-row"
@@ -61,11 +94,15 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
         className
       )}
       {...props}
-    />
-  )
+    >
+      {validChildren}
+    </tr>
+  );
 }
 
-function TableHead({ className, ...props }: React.ComponentProps<"th">) {
+export function TableHead(
+  { className, ...props }: React.ComponentProps<"th">
+) {
   return (
     <th
       data-slot="table-head"
@@ -75,10 +112,12 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
       )}
       {...props}
     />
-  )
+  );
 }
 
-function TableCell({ className, ...props }: React.ComponentProps<"td">) {
+export function TableCell(
+  { className, ...props }: React.ComponentProps<"td">
+) {
   return (
     <td
       data-slot="table-cell"
@@ -88,29 +127,17 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
       )}
       {...props}
     />
-  )
+  );
 }
 
-function TableCaption({
-  className,
-  ...props
-}: React.ComponentProps<"caption">) {
+export function TableCaption(
+  { className, ...props }: React.ComponentProps<"caption">
+) {
   return (
     <caption
       data-slot="table-caption"
       className={cn("text-muted-foreground mt-4 text-sm", className)}
       {...props}
     />
-  )
-}
-
-export {
-  Table,
-  TableHeader,
-  TableBody,
-  TableFooter,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableCaption,
+  );
 }
