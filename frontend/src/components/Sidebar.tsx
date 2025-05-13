@@ -21,6 +21,11 @@ const Sidebar = ({ activeLink, isOpen, onClose }: SidebarProps) => {
               Company Management
             </a>
           </li>
+          <li className="mb-2">
+            <a href="/customers" className={`block p-2 rounded-md ${activeLink === 'customers' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}> {/* Use primary color for active, muted for hover */}
+              Customer Management
+            </a>
+          </li>
           <li>
             <a href="/billing" className={`block p-2 rounded-md ${activeLink === 'billing' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}> {/* Use primary color for active, muted for hover */}
               Billing Management

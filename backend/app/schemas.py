@@ -31,3 +31,28 @@ class Company(CompanyBase):
 
     class Config:
         orm_mode = True
+
+class CustomerBase(BaseModel):
+    name: str
+    address: Optional[str] = None
+    gstin: Optional[str] = None
+    phone: Optional[str] = None
+    tan: Optional[str] = None
+    fssai: Optional[str] = None
+
+class CustomerCreate(CustomerBase):
+    pass
+
+class CustomerUpdate(CustomerBase):
+    name: Optional[str] = None
+    address: Optional[str] = None
+    gstin: Optional[str] = None
+    phone: Optional[str] = None
+    tan: Optional[str] = None
+    fssai: Optional[str] = None
+
+class Customer(CustomerBase):
+    id: int
+
+    class Config:
+        orm_mode = True

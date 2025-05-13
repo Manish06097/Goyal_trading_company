@@ -33,3 +33,13 @@ class Company(Base):
     phone_number = Column(String)
     email = Column(String)
     authorized_signature_image = Column(String)
+
+class Customer(Base):
+    __tablename__ = "customers"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    address = Column(String)
+    gstin = Column(String)
+    phone = Column(String)
+    tan = Column(String)
+    fssai = Column(String)

@@ -1,6 +1,9 @@
 # app/routes.py
 import os
 import uuid
+import logging
+
+logging.basicConfig(level=logging.INFO)
 import shutil
 from io import BytesIO
 
@@ -73,6 +76,71 @@ def delete_company(company_id: int, db: Session = Depends(get_db)):
     db.delete(db_company)
     db.commit()
     return db_company
+
+@router.post("/customers/", response_model=schemas.Customer)
+def create_customer(customer: schemas.CustomerCreate, db: Session = Depends(get_db)):
+    db_customer = models.Customer(**customer.model_dump())
+    db.add(db_customer)
+    db.commit()
+    db.refresh(db_customer)
+    return db_customer
+
+@router.get("/customers/", response_model=list[schemas.Customer])
+def read_customers(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    customers = db.query(models.Customer).offset(skip).limit(limit).all()
+    return customers
+
+@router.get("/customers/{customer_id}", response_model=schemas.Customer)
+def read_customer(customer_id: int, db: Session = Depends(get_db)):
+    customer = db.query(models.Customer).filter(models.Customer.id == customer_id).first()
+    if customer is None:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    return customer
+
+@router.put("/customers/{customer_id}", response_model=schemas.Customer)
+
+
+def update_customer(customer_id: int, customer: schemas.CustomerUpdate, db: Session = Depends(get_db)):
+    logging.info(f"Updating customer with id: {customer_id}, data: {customer}")
+    db_customer = db.query(models.Customer).filter(models.Customer.id == customer_id).first()
+    logging.info(f"Customer object before update: {db_customer}")
+    if db_customer is None:
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    customer_data = customer.model_dump(exclude_unset=True)
+    if 'id' in customer_data and customer_data['id'] != customer_id:
+        raise HTTPException(status_code=400, detail="Customer ID in request body does not match the ID in the URL.")
+
+    for key, value in customer_data.items():
+        setattr(db_customer, key, value)
+    
+        logging.info(f"Customer object after update: {db_customer}")
+        db.commit()
+        logging.info(f"Customer update committed for id: {customer_id}")
+    db.refresh(db_customer)
+    return db_customer
+
+@router.delete("/customers/{customer_id}", response_model=schemas.Customer)
+def delete_customer(customer_id: int, db: Session = Depends(get_db)):
+    db_customer = db.query(models.Customer).filter(models.Customer.id == customer_id).first()
+    if db_customer is None:
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    db.delete(db_customer)
+    db.commit()
+    return db_customer
+
+@router.post("/api/customers/", response_model=schemas.Customer)
+def create_customer_api(customer: schemas.CustomerCreate, db: Session = Depends(get_db)):
+    try:
+        db_customer = models.Customer(**customer.model_dump())
+        db.add(db_customer)
+        db.commit()
+        db.refresh(db_customer)
+        return db_customer
+    except Exception as e:
+        print(f"Error saving customer: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to save customer: {e}")
 
 
 @router.post("/api/invoice/generate")

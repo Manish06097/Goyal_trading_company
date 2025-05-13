@@ -13,3 +13,14 @@ CREATE TABLE IF NOT EXISTS companies (
 );
 
 -- Add any other initial database setup here
+
+-- Create the customers table if it does not exist
+CREATE TABLE IF NOT EXISTS customers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name VARCHAR(255) NOT NULL,
+    address TEXT,
+    gstin VARCHAR(50),
+    phone VARCHAR(50),
+    tan VARCHAR(50),
+    fssai VARCHAR(50)
+);

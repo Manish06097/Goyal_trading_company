@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
+import { InvoiceFormModal } from "@/components/billing/InvoiceFormModal";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import DatePicker from "react-datepicker";
@@ -10,6 +12,7 @@ const BillingManagement = () => {
   const [search, setSearch] = useState("");
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
   const [startDate, endDate] = dateRange;
+  const [open, setOpen] = useState(false);
 
   return (
     <div className="w-full">
@@ -21,7 +24,10 @@ const BillingManagement = () => {
       </div>
 
       <div className="flex items-center justify-between mb-4">
-        <Button variant="default">New Invoice</Button>
+        <div className="flex items-center space-x-2">
+          <Button variant="default" onClick={() => setOpen(true)}>New Invoice</Button>
+          <InvoiceFormModal open={open} setOpen={setOpen} />
+        </div>
         <div className="flex items-center space-x-2">
           <Input
             type="search"
