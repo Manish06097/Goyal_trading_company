@@ -16,16 +16,17 @@ services:
     networks:
       - app_net
     healthcheck:
-    test: ["CMD", "pg_isready", "-U", "billinguser", "-d", "billingdb"]
-    interval: 5s
-    retries: 5
+      test: ["CMD", "pg_isready", "-U", "billinguser", "-d", "billingdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     environment:
-      # this must match the service name above
       DATABASE_URL: postgresql://billinguser:billingpass@db:5432/billingdb
     depends_on:
       db:
