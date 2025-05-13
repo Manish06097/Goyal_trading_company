@@ -202,30 +202,32 @@ export default function CompanyManagementPage() {
       {/* Sidebar Placeholder */}
       {/* <Sidebar /> */}
 
-      <div className="flex-1 px-6 py-8"> {/* Increased vertical padding */}
-        <div className="mb-4"> {/* Container for heading and subtitle */}
+      <div className="flex-1 p-6 md:p-8"> {/* Apply consistent padding/gutters */}
+        <div className="mb-6"> {/* Increased bottom margin for consistency */}
           <h1 className="text-2xl font-bold">Company Management</h1> {/* Slightly larger heading */}
           <p className="text-gray-600 text-sm">Manage all your registered companies here</p> {/* Subtitle */}
         </div>
         <div className="flex justify-end mb-6"> {/* Container for button, aligned right */}
-          <Button variant="default" className="px-8" onClick={() => { setSelectedCompany(null); setIsFormModalOpen(true); }}> {/* Increased horizontal padding */}
+          <Button className="px-8" onClick={() => { setSelectedCompany(null); setIsFormModalOpen(true); }}> {/* Default button is primary */}
             Add Company
           </Button>
         </div>
 
         {/* Search and Filter Controls */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="flex flex-col md:flex-row gap-4 mb-6"> {/* Apply 16px gap between elements */}
           <Input
             placeholder="Search by name, GST, email..."
-            className="max-w-sm"
+            className="flex-1"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-        
+          {/* Placeholder for filter buttons */}
+          <Button variant="outline" className="flex-shrink-0">Filter 1</Button> {/* Outline button for secondary action */}
+          <Button variant="outline" className="flex-shrink-0">Filter 2</Button> {/* Outline button for secondary action */}
         </div>
 
         {/* Data Table */}
-          <div className="shadow-sm rounded-lg p-6"> {/* Container with elevation and padding */}
+          <div className="bg-white rounded-lg shadow p-6"> {/* White card with rounded corners and shadow, 24px padding */}
             <div className="overflow-x-auto">
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center h-64">
@@ -258,8 +260,8 @@ export default function CompanyManagementPage() {
                           <TableCell>{company.name}</TableCell>
                           <TableCell>
                             {company.logo && (
-                              <div className="size-10 flex items-center justify-center overflow-hidden rounded-sm cursor-pointer" onClick={() => setSelectedImage(`${API_BASE_URL}/images/${company.logo?.split('/').pop()}`)}> {/* Added optional chaining */}
-                                <img src={`${API_BASE_URL}/images/${company.logo?.split('/').pop()}`} alt={`${company.name} Logo`} className="size-full object-contain" /> {/* Added optional chaining */}
+                              <div className="size-10 flex items-center justify-center overflow-hidden rounded-sm cursor-pointer" onClick={() => setSelectedImage(`${API_BASE_URL}/images/${company.logo?.split('/').pop()}`)}>
+                                <img src={`${API_BASE_URL}/images/${company.logo?.split('/').pop()}`} alt={`${company.name} Logo`} className="size-full object-contain" />
                               </div>
                             )}
                           </TableCell>
@@ -273,20 +275,20 @@ export default function CompanyManagementPage() {
                           <TableCell className="hidden lg:table-cell">{company.tan_number}</TableCell>
                           <TableCell className="hidden lg:table-cell">
                             {company.authorized_signature_image && (
-                              <div className="size-10 flex items-center justify-center overflow-hidden rounded-sm cursor-pointer" onClick={() => setSelectedImage(`${API_BASE_URL}/images/${company.authorized_signature_image?.split('/').pop()}`)}> {/* Added optional chaining */}
-                                <img src={`${API_BASE_URL}/images/${company.authorized_signature_image?.split('/').pop()}`} alt={`${company.name} Authorized Signature`} className="size-full object-contain" /> {/* Added optional chaining */}
+                              <div className="size-10 flex items-center justify-center overflow-hidden rounded-sm cursor-pointer" onClick={() => setSelectedImage(`${API_BASE_URL}/images/${company.authorized_signature_image?.split('/').pop()}`)}>
+                                <img src={`${API_BASE_URL}/images/${company.authorized_signature_image?.split('/').pop()}`} alt={`${company.name} Authorized Signature`} className="size-full object-contain" />
                               </div>
                             )}
                           </TableCell>
                           <TableCell className="flex items-center gap-1"> {/* Adjusted gap */}
-                            <Button size="icon" variant="ghost" className="size-8 hover:bg-gray-100 rounded-full" onClick={() => { setSelectedCompany(company); setIsFormModalOpen(true); }} aria-label={`Edit company ${company.name}`}> {/* Added hover and rounded */}
-                              <EditIcon className="size-5" /> {/* Increased icon size */}
+                            <Button size="icon" variant="ghost" className="size-10 hover:bg-gray-100 rounded-full" onClick={() => { setSelectedCompany(company); setIsFormModalOpen(true); }} aria-label={`Edit company ${company.name}`}>
+                              <EditIcon className="size-5" />
                             </Button>
                             {/* Inline AlertDialog for Delete */}
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button size="icon" variant="destructive" className="size-8 hover:bg-red-100 rounded-full" aria-label={`Delete company ${company.name}`}> {/* Added hover and rounded */}
-                                  <TrashIcon className="size-5" /> {/* Increased icon size */}
+                                <Button size="icon" variant="destructive" className="size-10 hover:bg-red-100 rounded-full" aria-label={`Delete company ${company.name}`}>
+                                  <TrashIcon className="size-5" />
                                 </Button>
                               </AlertDialogTrigger>
                               <AlertDialogContent>
@@ -305,9 +307,9 @@ export default function CompanyManagementPage() {
                           </TableCell>
                           <TableCell>
                             <Button
-                              size="sm"
+                              size="icon"
                               variant="ghost"
-                              className="md:hidden"
+                              className="md:hidden size-11"
                               onClick={() => setExpandedRow(expandedRow === company.id ? null : company.id)}
                             >
                               {expandedRow === company.id ? '-' : '+'}
@@ -352,8 +354,8 @@ export default function CompanyManagementPage() {
                                 {company.authorized_signature_image && (
                                   <div>
                                     <strong className="block text-sm font-medium text-gray-700">Authorized Signature:</strong>
-                                    <div className="size-10 flex items-center justify-center overflow-hidden rounded-sm cursor-pointer mt-1" onClick={() => setSelectedImage(`${API_BASE_URL}/images/${company.authorized_signature_image?.split('/').pop()}`)}> {/* Added optional chaining */}
-                                      <img src={`${API_BASE_URL}/images/${company.authorized_signature_image?.split('/').pop()}`} alt={`${company.name} Authorized Signature`} className="size-full object-contain" /> {/* Added optional chaining */}
+                                    <div className="size-10 flex items-center justify-center overflow-hidden rounded-sm cursor-pointer mt-1" onClick={() => setSelectedImage(`${API_BASE_URL}/images/${company.authorized_signature_image?.split('/').pop()}`)}>
+                                      <img src={`${API_BASE_URL}/images/${company.authorized_signature_image?.split('/').pop()}`} alt={`${company.name} Authorized Signature`} className="size-full object-contain" />
                                     </div>
                                   </div>
                                 )}

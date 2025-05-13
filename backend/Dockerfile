@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y \
     shared-mime-info \
     fonts-liberation \
     fonts-dejavu \
+    postgresql-client \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 

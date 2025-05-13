@@ -114,9 +114,25 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring/50 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2;
   }
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Sidebar Drawer Styles */
+.sidebar-drawer {
+  @apply shadow-lg; /* Add a shadow to the sidebar */
+}
+
+.main-content-shifted {
+  @apply md:ml-64; /* Shift main content when sidebar is open */
+}
+
+.overlay-backdrop {
+  @apply backdrop-blur-sm; /* Add backdrop blur to the overlay */
+}
+.full-width {
+  width: 100% !important;
 }
