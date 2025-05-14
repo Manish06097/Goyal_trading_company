@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Dialog,
@@ -19,87 +20,66 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { useAppToast } from '../../contexts/ToastContext' // Corrected toast import
+import { useAppToast } from '../../contexts/ToastContext'; // Your custom toast hook
 
-// --- INTERFACES ---
-interface Company {
+// --- INTERFACES (Matching API for `invoiceData` prop) ---
+interface NestedCompany { id: number; name?: string; }
+interface NestedCustomer { id: number; name: string; }
+interface LineItemAPI { id?: number; mill: string; bargain_no: string; quality: string; quantity_quintals: string; rate: string; amount: string; }
+interface ChargesAPI { id?: number; insurance_description?: string | null; insurance_amount?: string | null; penalty_description?: string | null; penalty_amount?: string | null; tds_pct?: string | null; tds_amount?: string | null; gst_pct?: string | null; gst_amount?: string | null; total_invoice_amount?: string | null; }
+interface PaymentDetailAPI { id?: number; payment_date: string; utr_no: string; utr_amount: string; adjust_amount: string; }
+interface RemarkAPI { id?: number; text: string; sequence: number; }
+
+interface DeliveryOrderDataForModal { // Prop for initial data
   id: number;
-  name?: string;
+  invoice_number: string;
+  seller_company_id: number;
+  buyer_customer_id: number;
+  consignee_customer_id?: number | null;
+  invoice_date: string | null | undefined;
+  due_date: string | null | undefined;
+  do_number?: string | null;
+  do_date?: string | null;
+  truck_no?: string | null;
+  // Nested objects for display/initial mapping, not directly for form state
+  seller_company?: NestedCompany;
+  buyer_customer?: NestedCustomer;
+  consignee_customer?: NestedCustomer | null;
+  line_items: LineItemAPI[];
+  charges: ChargesAPI;
+  payment_details: PaymentDetailAPI[];
+  remarks: RemarkAPI[];
 }
 
-interface Customer {
-  id: number;
-  name: string;
-}
+
+// --- INTERFACES for Form State ---
+interface LineItemForm { id: string; mill: string; bargain_no: string; quality: string; quantity_quintals: number | ""; rate: number | ""; amount: number; }
+interface ChargesForm { insurance_description: string; insurance_amount: number | ""; penalty_description: string; penalty_amount: number | ""; tds_pct: number | ""; gst_pct: number | ""; }
+interface PaymentDetailForm { id: string; payment_date: string; utr_no: string; utr_amount: number | ""; adjust_amount: number | ""; }
+interface RemarkForm { id: string; text: string; }
+
 
 interface InvoiceFormModalProps {
   open: boolean;
   setOpen: (open: boolean) => void;
   onInvoiceCreated?: () => void;
-}
-
-export type { InvoiceFormModalProps };
-
-interface LineItem {
-  id: string;
-  mill: string;
-  bargain_no: string;
-  quality: string;
-  quantity_quintals: number | "";
-  rate: number | "";
-  amount: number;
-}
-
-interface ChargesState {
-  insurance_description: string;
-  insurance_amount: number | "";
-  penalty_description: string;
-  penalty_amount: number | "";
-  tds_pct: number | "";
-  gst_pct: number | "";
-}
-
-interface PaymentDetailItem {
-  id: string;
-  payment_date: string;
-  utr_no: string;
-  utr_amount: number | "";
-  adjust_amount: number | "";
-}
-
-interface RemarkItem {
-  id: string;
-  text: string;
+  invoiceData?: DeliveryOrderDataForModal | null; // For pre-filling the form for editing
 }
 
 const SAME_AS_BUYER_OPTION_VALUE = "___same_as_buyer___";
 
-const initialLineItem: Omit<LineItem, 'id' | 'amount'> = {
-  mill: "",
-  bargain_no: "",
-  quality: "",
-  quantity_quintals: 1,
-  rate: "",
-};
+const initialLineItemState: Omit<LineItemForm, 'id' | 'amount'> = { mill: "", bargain_no: "", quality: "", quantity_quintals: 1, rate: "" };
+const initialChargesState: ChargesForm = { insurance_description: "", insurance_amount: "", penalty_description: "", penalty_amount: "", tds_pct: 1, gst_pct: 5 };
 
-const initialChargesState: ChargesState = {
-  insurance_description: "",
-  insurance_amount: "",
-  penalty_description: "",
-  penalty_amount: "",
-  tds_pct: 1,
-  gst_pct: 5,
-};
-
-
-export function InvoiceFormModal({ open, setOpen, onInvoiceCreated }: InvoiceFormModalProps): React.ReactElement {
+export function InvoiceFormModal({ open, setOpen, onInvoiceCreated, invoiceData }: InvoiceFormModalProps): React.ReactElement {
   const { addToast } = useAppToast();
+  const [isEditing, setIsEditing] = useState(false);
 
-  // --- STATE ---
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
-  const [isLoadingCustomers, setIsLoadingCustomers] = useState(true);
+  // Form States
+  const [companies, setCompanies] = useState<NestedCompany[]>([]); // Use NestedCompany from page
+  const [customers, setCustomers] = useState<NestedCustomer[]>([]); // Use NestedCustomer from page
+  const [isLoadingCompanies, setIsLoadingCompanies] = useState(false); // Don't load by default if editing
+  const [isLoadingCustomers, setIsLoadingCustomers] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [invoiceNumberInput, setInvoiceNumberInput] = useState<string>("");
@@ -112,21 +92,25 @@ export function InvoiceFormModal({ open, setOpen, onInvoiceCreated }: InvoiceFor
   const [doNumber, setDoNumber] = useState<string>("");
   const [doDate, setDoDate] = useState<string>("");
   const [truckNo, setTruckNo] = useState<string>("");
-  // const [poReference, setPoReference] = useState<string>(""); // Not in backend schema
 
-  const [lineItems, setLineItems] = useState<LineItem[]>([]);
+  const [lineItems, setLineItems] = useState<LineItemForm[]>([]);
   const [lineItemRowValid, setLineItemRowValid] = useState<boolean[]>([]);
   
-  const [charges, setCharges] = useState<ChargesState>({...initialChargesState});
-  const [paymentDetails, setPaymentDetails] = useState<PaymentDetailItem[]>([]);
-  const [remarks, setRemarks] = useState<RemarkItem[]>([]);
+  const [charges, setCharges] = useState<ChargesForm>({...initialChargesState});
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetailForm[]>([]);
+  const [remarks, setRemarks] = useState<RemarkForm[]>([]);
 
   const lineItemsTbodyRef = useRef<HTMLTableSectionElement>(null);
+  const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
-  const API_BASE_URL =
-    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+  const parseNumericInput = (value: string | number | null | undefined): number | "" => {
+    if (value === "" || value === null || value === undefined) return "";
+    const num = parseFloat(String(value));
+    return isNaN(num) ? "" : num;
+  };
 
   const resetForm = useCallback(() => {
+    setIsEditing(false);
     setInvoiceNumberInput("");
     setSelectedSellerCompanyId(undefined);
     setSelectedBuyerCustomerId(undefined);
@@ -136,218 +120,198 @@ export function InvoiceFormModal({ open, setOpen, onInvoiceCreated }: InvoiceFor
     setDoNumber("");
     setDoDate("");
     setTruckNo("");
-    setLineItems([]);
-    setLineItemRowValid([]);
+    setLineItems([{ id: Date.now().toString(), ...initialLineItemState, amount: 0 }]);
+    setLineItemRowValid([false]);
     setCharges({...initialChargesState});
     setPaymentDetails([]);
     setRemarks([]);
   }, []);
 
+  useEffect(() => {
+    if (!open) {
+      resetForm(); // Reset form when dialog is closed
+    } else {
+      // Fetch companies and customers if not already loaded or if forced
+      if (companies.length === 0) {
+        setIsLoadingCompanies(true);
+        fetch(`${API_BASE_URL}/companies/`)
+          .then(res => res.ok ? res.json() : Promise.reject(new Error("Failed to load companies")))
+          .then((data: NestedCompany[]) => setCompanies(data))
+          .catch(err => addToast(err.message, 'error'))
+          .finally(() => setIsLoadingCompanies(false));
+      }
+      if (customers.length === 0) {
+        setIsLoadingCustomers(true);
+        fetch(`${API_BASE_URL}/customers/`)
+          .then(res => res.ok ? res.json() : Promise.reject(new Error("Failed to load customers")))
+          .then((data: NestedCustomer[]) => setCustomers(data))
+          .catch(err => addToast(err.message, 'error'))
+          .finally(() => setIsLoadingCustomers(false));
+      }
+
+      if (invoiceData && invoiceData.id) {
+        setIsEditing(true);
+        setInvoiceNumberInput(invoiceData.invoice_number);
+        setSelectedSellerCompanyId(String(invoiceData.seller_company_id));
+        setSelectedBuyerCustomerId(String(invoiceData.buyer_customer_id));
+        
+        if (invoiceData.consignee_customer_id) {
+            if (invoiceData.buyer_customer_id === invoiceData.consignee_customer_id) {
+                setSelectedConsigneeCustomerId(SAME_AS_BUYER_OPTION_VALUE);
+            } else {
+                setSelectedConsigneeCustomerId(String(invoiceData.consignee_customer_id));
+            }
+        } else {
+            setSelectedConsigneeCustomerId(undefined);
+        }
+
+        setInvoiceDate(invoiceData.invoice_date || "");
+        setDueDate(invoiceData.due_date || "");
+        setDoNumber(invoiceData.do_number || "");
+        setDoDate(invoiceData.do_date || "");
+        setTruckNo(invoiceData.truck_no || "");
+
+        setLineItems(invoiceData.line_items.map((item, idx) => ({
+          id: String(item.id || `temp-${idx}-${Date.now()}`), // Ensure an ID for React key
+          mill: item.mill,
+          bargain_no: item.bargain_no,
+          quality: item.quality,
+          quantity_quintals: parseNumericInput(item.quantity_quintals),
+          rate: parseNumericInput(item.rate),
+          amount: parseFloat(item.amount) || 0,
+        })));
+        setLineItemRowValid(invoiceData.line_items.map(item => 
+            Number(parseNumericInput(item.quantity_quintals)) > 0 &&
+            Number(parseNumericInput(item.rate)) > 0 &&
+            !!item.mill && !!item.bargain_no && !!item.quality
+        ));
+
+        if (invoiceData.charges) {
+          setCharges({
+            insurance_description: invoiceData.charges.insurance_description || "",
+            insurance_amount: parseNumericInput(invoiceData.charges.insurance_amount),
+            penalty_description: invoiceData.charges.penalty_description || "",
+            penalty_amount: parseNumericInput(invoiceData.charges.penalty_amount),
+            tds_pct: parseNumericInput(invoiceData.charges.tds_pct),
+            gst_pct: parseNumericInput(invoiceData.charges.gst_pct),
+          });
+        }
+
+        setPaymentDetails(invoiceData.payment_details.map((pd, idx) => ({
+          id: String(pd.id || `temp-pd-${idx}-${Date.now()}`),
+          payment_date: pd.payment_date,
+          utr_no: pd.utr_no,
+          utr_amount: parseNumericInput(pd.utr_amount),
+          adjust_amount: parseNumericInput(pd.adjust_amount),
+        })));
+
+        setRemarks(invoiceData.remarks.map((r, idx) => ({
+          id: String(r.id || `temp-r-${idx}-${Date.now()}`),
+          text: r.text,
+        })));
+
+      } else {
+        setIsEditing(false);
+        // For new invoice, ensure at least one line item
+        if (lineItems.length === 0) {
+            addLineItem();
+        }
+      }
+    }
+  }, [open, invoiceData, resetForm, addToast, API_BASE_URL, companies.length, customers.length]); // Added addLineItem if we want to ensure one item on new
+
 
   const addLineItem = useCallback(() => {
-    const newItem: LineItem = {
+    const newItem: LineItemForm = {
       id: Date.now().toString(),
-      ...initialLineItem,
+      ...initialLineItemState,
       amount: 0,
     };
     setLineItems((items) => [...items, newItem]);
     setLineItemRowValid((prev) => [...prev, false]);
-
     requestAnimationFrame(() => {
-      lineItemsTbodyRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-      const lastMillInput = lineItemsTbodyRef.current?.querySelector('tr:last-child td:first-child input[type="text"]');
-      (lastMillInput as HTMLInputElement)?.focus();
-    });
+        lineItemsTbodyRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+        const lastMillInput = lineItemsTbodyRef.current?.querySelector('tr:last-child td:first-child input[type="text"]');
+        (lastMillInput as HTMLInputElement)?.focus();
+      });
   }, []);
+  
 
-  // --- EFFECTS ---
   useEffect(() => {
     if (!selectedBuyerCustomerId && selectedConsigneeCustomerId === SAME_AS_BUYER_OPTION_VALUE) {
       setSelectedConsigneeCustomerId(undefined);
     }
   }, [selectedBuyerCustomerId, selectedConsigneeCustomerId]);
 
-  useEffect(() => {
-    async function fetchCompanies() {
-      setIsLoadingCompanies(true);
-      try {
-        const res = await fetch(`${API_BASE_URL}/companies/`);
-        if (!res.ok) throw new Error(`Failed to fetch companies: ${res.statusText}`);
-        const data: Company[] = await res.json();
-        setCompanies(data);
-      } catch (err) {
-        console.error("Error fetching companies:", err);
-        addToast("Could not load companies.", 'error');
-      } finally {
-        setIsLoadingCompanies(false);
-      }
-    }
-    if (open) fetchCompanies();
-  }, [API_BASE_URL, open, addToast]);
-
-  useEffect(() => {
-    async function fetchCustomers() {
-      setIsLoadingCustomers(true);
-      try {
-        const res = await fetch(`${API_BASE_URL}/customers/`);
-        if (!res.ok) throw new Error(`Failed to fetch customers: ${res.statusText}`);
-        const data: Customer[] = await res.json();
-        setCustomers(data);
-      } catch (err) {
-        console.error("Error fetching customers:", err);
-        addToast("Could not load customers.", 'error');
-      } finally {
-        setIsLoadingCustomers(false);
-      }
-    }
-    if (open) fetchCustomers();
-  }, [API_BASE_URL, open, addToast]);
-  
-  useEffect(() => {
-    if (open && lineItems.length === 0) {
-        addLineItem();
-    }
-    if (!open) { 
-        resetForm();
-    }
-  }, [open, lineItems.length, addLineItem, resetForm]);
-
-
-  // --- HELPER FOR PARSING NUMBER INPUTS ---
-  const parseNumericInput = (value: string | number): number | "" => {
-    if (value === "" || value === null || value === undefined) return "";
-    const num = parseFloat(String(value));
-    return isNaN(num) ? "" : num;
-  };
-  
-  // --- LINE ITEM MANAGEMENT ---
-  // addLineItem moved up and wrapped in useCallback
 
   const removeLineItem = (id: string) => {
     if (lineItems.length <= 1) {
-        addToast("At least one line item is required.", 'error'); // Or a different type like 'warning'
+        addToast("At least one line item is required.", 'error');
         return;
     }
-    const index = lineItems.findIndex(item => item.id === id);
-    if (index === -1) return;
     setLineItems((items) => items.filter((item) => item.id !== id));
-    setLineItemRowValid((prev) => prev.filter((_, i) => i !== index));
+    setLineItemRowValid((prev) => {
+        const index = lineItems.findIndex(item => item.id === id);
+        if (index !== -1) return prev.filter((_, i) => i !== index);
+        return prev;
+    });
   };
 
-  const updateLineItem = <K extends keyof LineItem>(
-    id: string,
-    field: K,
-    value: string
-  ) => {
+  const updateLineItem = <K extends keyof LineItemForm>(id: string, field: K, value: string) => {
     setLineItems((items) => {
       const index = items.findIndex(item => item.id === id);
       if (index === -1) return items;
-
       const next = [...items];
       const updatedItem = { ...next[index] };
-      
       if (field === "quantity_quintals" || field === "rate") {
-        updatedItem[field] = parseNumericInput(value) as LineItem[K];
+        updatedItem[field] = parseNumericInput(value) as LineItemForm[K];
       } else {
-        updatedItem[field] = value as LineItem[K];
+        updatedItem[field] = value as LineItemForm[K];
       }
-
       const numQuantity = Number(updatedItem.quantity_quintals);
       const numRate = Number(updatedItem.rate);
       updatedItem.amount = numQuantity * numRate;
       next[index] = updatedItem;
-
       setLineItemRowValid((prevRowValid) => {
         const nextRowValid = [...prevRowValid];
-        nextRowValid[index] = numQuantity > 0 && numRate > 0 && 
-                              !!updatedItem.mill && !!updatedItem.bargain_no && !!updatedItem.quality;
+        nextRowValid[index] = numQuantity > 0 && numRate > 0 && !!updatedItem.mill && !!updatedItem.bargain_no && !!updatedItem.quality;
         return nextRowValid;
       });
       return next;
     });
   };
 
-  // --- CHARGES MANAGEMENT ---
-  const handleChargeChange = <K extends keyof ChargesState>(field: K, value: string) => {
-    let processedValue: string | number = value;
-    if (field.endsWith('_amount') || field.endsWith('_pct')) {
-        processedValue = parseNumericInput(value);
-    }
-    setCharges(prev => ({ ...prev, [field]: processedValue as ChargesState[K] }));
+  const handleChargeChange = <K extends keyof ChargesForm>(field: K, value: string) => {
+    setCharges(prev => ({ ...prev, [field]: (field.endsWith('_amount') || field.endsWith('_pct') ? parseNumericInput(value) : value) as ChargesForm[K] }));
   };
   
-  // --- PAYMENT DETAILS MANAGEMENT ---
-  const addPaymentDetail = () => {
-    setPaymentDetails(prev => [...prev, { 
-      id: Date.now().toString(), 
-      payment_date: new Date().toISOString().substring(0,10), 
-      utr_no: "", 
-      utr_amount: "", 
-      adjust_amount: "" 
-    }]);
+  const addPaymentDetail = () => setPaymentDetails(prev => [...prev, { id: Date.now().toString(), payment_date: new Date().toISOString().substring(0,10), utr_no: "", utr_amount: "", adjust_amount: "" }]);
+  const removePaymentDetail = (id: string) => setPaymentDetails(prev => prev.filter(item => item.id !== id));
+  const updatePaymentDetail = <K extends keyof PaymentDetailForm>(id: string, field: K, value: string) => {
+    setPaymentDetails(prev => prev.map(item => item.id === id ? { ...item, [field]: (field === "utr_amount" || field === "adjust_amount" ? parseNumericInput(value) : value) as PaymentDetailForm[K] } : item));
   };
 
-  const removePaymentDetail = (id: string) => {
-    setPaymentDetails(prev => prev.filter(item => item.id !== id));
-  };
+  const addRemark = () => setRemarks(prev => [...prev, { id: Date.now().toString(), text: "" }]);
+  const removeRemark = (id: string) => setRemarks(prev => prev.filter(item => item.id !== id));
+  const updateRemark = (id: string, text: string) => setRemarks(prev => prev.map(item => item.id === id ? { ...item, text } : item));
 
-  const updatePaymentDetail = <K extends keyof PaymentDetailItem>(id: string, field: K, value: string) => {
-    setPaymentDetails(prev => prev.map(item => {
-      if (item.id === id) {
-        const updatedItem = { ...item };
-        if (field === "utr_amount" || field === "adjust_amount") {
-          updatedItem[field] = parseNumericInput(value) as PaymentDetailItem[K];
-        } else {
-          updatedItem[field] = value as PaymentDetailItem[K];
-        }
-        return updatedItem;
-      }
-      return item;
-    }));
-  };
-
-  // --- REMARKS MANAGEMENT ---
-  const addRemark = () => {
-    setRemarks(prev => [...prev, { id: Date.now().toString(), text: "" }]);
-  };
-
-  const removeRemark = (id: string) => {
-    setRemarks(prev => prev.filter(item => item.id !== id));
-  };
-
-  const updateRemark = (id: string, text: string) => {
-    setRemarks(prev => prev.map(item => item.id === id ? { ...item, text } : item));
-  };
-
-  // --- CALCULATIONS & DERIVED STATE ---
   const subtotal = lineItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
   const gstAmountCalculated = subtotal * (Number(charges.gst_pct || 0) / 100);
   const tdsAmountCalculated = subtotal * (Number(charges.tds_pct || 0) / 100);
   const totalOtherCharges = (Number(charges.insurance_amount) || 0) - (Number(charges.penalty_amount) || 0);
   const totalInvoiceAmountCalculated = subtotal + gstAmountCalculated - tdsAmountCalculated + totalOtherCharges;
 
-  const getEffectiveConsigneeId = (): string | undefined => {
-    if (selectedConsigneeCustomerId === SAME_AS_BUYER_OPTION_VALUE) {
-      return selectedBuyerCustomerId;
-    }
-    return selectedConsigneeCustomerId;
-  };
+  const getEffectiveConsigneeId = (): string | undefined => (selectedConsigneeCustomerId === SAME_AS_BUYER_OPTION_VALUE ? selectedBuyerCustomerId : selectedConsigneeCustomerId);
   const effectiveConsigneeId = getEffectiveConsigneeId();
+  const buyerCustomerName = selectedBuyerCustomerId && !isLoadingCustomers ? customers.find(c => String(c.id) === selectedBuyerCustomerId)?.name : "";
 
-  const buyerCustomerName = selectedBuyerCustomerId && !isLoadingCustomers
-    ? customers.find(c => String(c.id) === selectedBuyerCustomerId)?.name
-    : "";
+  const isFormValid = (): boolean => (
+    !!invoiceNumberInput.trim() &&
+    lineItems.length > 0 && lineItemRowValid.every(v => v) &&
+    !!selectedSellerCompanyId && !!selectedBuyerCustomerId && !!effectiveConsigneeId &&
+    !!invoiceDate && !!dueDate
+  );
 
-  // --- FORM VALIDATION ---
-  const isFormValid = (): boolean => {
-    if (!invoiceNumberInput.trim()) return false;
-    if (lineItems.length === 0 || !lineItemRowValid.every((v) => v)) return false;
-    if (!selectedSellerCompanyId || !selectedBuyerCustomerId || !effectiveConsigneeId) return false;
-    if (!invoiceDate || !dueDate) return false;
-    return true;
-  };
-
-  // --- FORM SUBMISSION ---
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!isFormValid()) {
@@ -355,10 +319,10 @@ export function InvoiceFormModal({ open, setOpen, onInvoiceCreated }: InvoiceFor
       return;
     }
     if (isSubmitting) return;
-
     setIsSubmitting(true);
 
-    const deliveryOrderPayload = {
+    // Base payload structure
+    let payload: any = {
       invoice_number: invoiceNumberInput.trim(),
       seller_company_id: Number(selectedSellerCompanyId),
       buyer_customer_id: Number(selectedBuyerCustomerId),
@@ -368,78 +332,104 @@ export function InvoiceFormModal({ open, setOpen, onInvoiceCreated }: InvoiceFor
       do_number: doNumber || null,
       do_date: doDate || null,
       truck_no: truckNo || null,
-      line_items: lineItems.map(item => ({
-        mill: item.mill,
-        bargain_no: item.bargain_no,
-        quality: item.quality,
-        quantity_quintals: String(item.quantity_quintals || "0"),
-        rate: String(item.rate || "0"),
-        amount: String(item.amount || "0"),
-      })),
-      charges: {
-        insurance_description: charges.insurance_description || null,
-        insurance_amount: String(charges.insurance_amount || "0.00"),
-        penalty_description: charges.penalty_description || null,
-        penalty_amount: String(charges.penalty_amount || "0.00"),
-        tds_pct: String(charges.tds_pct || "0"),
-        gst_pct: String(charges.gst_pct || "0"),
-        tds_amount: String(tdsAmountCalculated.toFixed(2)),
-        gst_amount: String(gstAmountCalculated.toFixed(2)),
-        total_invoice_amount: String(totalInvoiceAmountCalculated.toFixed(2)),
-      },
-      payment_details: paymentDetails.map(pd => ({
-        payment_date: pd.payment_date,
-        utr_no: pd.utr_no,
-        utr_amount: String(pd.utr_amount || "0.00"),
-        adjust_amount: String(pd.adjust_amount || "0.00"),
-      })),
-      remarks: remarks.map((remark, index) => ({
-        text: remark.text,
-        sequence: index + 1,
-      })),
     };
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/delivery_orders/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+    // Structure for POST (Create) - generally matches your GET response, using strings for numbers
+    const createPayload = {
+        ...payload,
+        line_items: lineItems.map(item => ({
+            mill: item.mill, bargain_no: item.bargain_no, quality: item.quality,
+            quantity_quintals: String(item.quantity_quintals || "0"),
+            rate: String(item.rate || "0"),
+            amount: String(item.amount || "0"),
+        })),
+        charges: {
+            insurance_description: charges.insurance_description || null,
+            insurance_amount: String(charges.insurance_amount || "0.00"),
+            penalty_description: charges.penalty_description || null,
+            penalty_amount: String(charges.penalty_amount || "0.00"),
+            tds_pct: String(charges.tds_pct || "0"),
+            gst_pct: String(charges.gst_pct || "0"),
+            tds_amount: String(tdsAmountCalculated.toFixed(2)),
+            gst_amount: String(gstAmountCalculated.toFixed(2)),
+            total_invoice_amount: String(totalInvoiceAmountCalculated.toFixed(2)),
         },
-        body: JSON.stringify(deliveryOrderPayload),
-      });
+        payment_details: paymentDetails.map(pd => ({
+            payment_date: pd.payment_date, utr_no: pd.utr_no,
+            utr_amount: String(pd.utr_amount || "0.00"),
+            adjust_amount: String(pd.adjust_amount || "0.00"),
+        })),
+        remarks: remarks.map((remark, index) => ({ text: remark.text, sequence: index + 1 })),
+    };
 
+    // Structure for PUT (Update) - expecting numbers as per your PUT schema example
+    const updatePayload = {
+        ...payload, // Base fields
+        line_items: lineItems.map(item => ({
+            // If updating existing items, backend might need item.id here if not replacing all
+            mill: item.mill, bargain_no: item.bargain_no, quality: item.quality,
+            quantity_quintals: Number(item.quantity_quintals || 0),
+            rate: Number(item.rate || 0),
+            amount: Number(item.amount || 0), // Backend likely recalculates this
+        })),
+        charges: {
+            insurance_description: charges.insurance_description || undefined, // Use undefined for optional nulls
+            insurance_amount: Number(charges.insurance_amount || 0),
+            penalty_description: charges.penalty_description || undefined,
+            penalty_amount: Number(charges.penalty_amount || 0),
+            tds_pct: Number(charges.tds_pct || 0),
+            gst_pct: Number(charges.gst_pct || 0),
+            // Backend should recalculate these:
+            tds_amount: Number(tdsAmountCalculated.toFixed(2)),
+            gst_amount: Number(gstAmountCalculated.toFixed(2)),
+            total_invoice_amount: Number(totalInvoiceAmountCalculated.toFixed(2)),
+        },
+        payment_details: paymentDetails.map(pd => ({
+            payment_date: pd.payment_date, utr_no: pd.utr_no,
+            utr_amount: Number(pd.utr_amount || 0),
+            adjust_amount: Number(pd.adjust_amount || 0),
+        })),
+        remarks: remarks.map((remark, index) => ({ text: remark.text, sequence: index + 1 })),
+    };
+
+
+    const finalPayload = isEditing ? updatePayload : createPayload;
+    const endpoint = isEditing && invoiceData?.id 
+        ? `${API_BASE_URL}/delivery_orders/${invoiceData.id}` 
+        : `${API_BASE_URL}/delivery_orders/`;
+    const method = isEditing ? "PUT" : "POST";
+
+    try {
+      const response = await fetch(endpoint, {
+        method: method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(finalPayload),
+      });
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: "An unknown error occurred during submission." }));
-        const errorMessage = errorData.detail || `HTTP error! status: ${response.status}`;
-        console.error("Backend error details:", errorData); // Log the actual error object
-        throw new Error(errorMessage);
+        const errorData = await response.json().catch(() => ({ detail: `Request failed with status ${response.status}` }));
+        throw new Error(errorData.detail || `HTTP error! Status: ${response.status}`);
       }
-      
-      addToast("Delivery Order created successfully!", 'success');
-      setOpen(false); // This will trigger the resetForm in the useEffect for 'open'
-      if (onInvoiceCreated) {
-        onInvoiceCreated();
-      }
+      addToast(isEditing ? "Delivery Order updated successfully!" : "Delivery Order created successfully!", 'success');
+      setOpen(false); // This will trigger resetForm via useEffect on 'open' prop
+      if (onInvoiceCreated) onInvoiceCreated();
     } catch (error) {
-      console.error("Failed to create delivery order:", error); // Log the caught error
+      console.error(`Failed to ${isEditing ? 'update' : 'create'} delivery order:`, error);
       addToast((error as Error).message, 'error');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // --- RENDER ---
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
-        setOpen(isOpen); // Let parent control open state
-        // Reset is now handled by useEffect on 'open' prop change
+        setOpen(isOpen); // Parent controls 'open', reset is handled by useEffect
     }}>
       <DialogContent className="sm:max-w-5xl w-full max-h-screen bg-white rounded-2xl shadow-lg flex flex-col overflow-hidden">
         <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden h-full">
             <DialogHeader className="flex-shrink-0 bg-white z-10 pt-6 px-6 pb-4 border-b">
-            <DialogTitle className="text-2xl font-bold">Create New Delivery Order</DialogTitle>
+            <DialogTitle className="text-2xl font-bold">{isEditing ? "Edit" : "Create New"} Delivery Order</DialogTitle>
             <DialogDescription className="text-muted-foreground text-sm mt-1">
-                Fill in the details to generate a new delivery order.
+                Fill in the details to {isEditing ? "update the" : "generate a new"} delivery order.
             </DialogDescription>
             </DialogHeader>
 
@@ -447,90 +437,58 @@ export function InvoiceFormModal({ open, setOpen, onInvoiceCreated }: InvoiceFor
             {/* Section 1: Main Details */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="invoiceNumberInput" className="block mb-1 text-sm font-medium">Invoice #*</Label>
-                  <Input 
-                    type="text" 
-                    id="invoiceNumberInput" 
-                    value={invoiceNumberInput}
-                    onChange={e => setInvoiceNumberInput(e.target.value)}
-                    placeholder="Enter unique invoice number" 
-                    required 
-                  />
+                  <Label htmlFor="modalInvoiceNumberInput" className="block mb-1 text-sm font-medium">Invoice #*</Label>
+                  <Input type="text" id="modalInvoiceNumberInput" value={invoiceNumberInput} onChange={e => setInvoiceNumberInput(e.target.value)} placeholder="Enter unique invoice number" required />
                 </div>
                 <div>
-                <Label htmlFor="sellerCompany" className="block mb-1 text-sm font-medium">Seller Company*</Label>
-                <Select value={selectedSellerCompanyId} onValueChange={setSelectedSellerCompanyId} required>
-                    <SelectTrigger id="sellerCompany"><SelectValue placeholder="Select seller company" /></SelectTrigger>
+                <Label htmlFor="modalSellerCompany" className="block mb-1 text-sm font-medium">Seller Company*</Label>
+                <Select value={selectedSellerCompanyId} onValueChange={setSelectedSellerCompanyId} required disabled={isLoadingCompanies}>
+                    <SelectTrigger id="modalSellerCompany"><SelectValue placeholder={isLoadingCompanies ? "Loading..." : "Select seller"} /></SelectTrigger>
                     <SelectContent>
-                    {isLoadingCompanies && <SelectItem value="loading-co" disabled>Loading companies...</SelectItem>}
-                    {!isLoadingCompanies && companies.length === 0 && <SelectItem value="no-co" disabled>No companies found</SelectItem>}
                     {companies.map((c) => <SelectItem key={c.id} value={String(c.id)}>{c.name || `Company ${c.id}`}</SelectItem>)}
                     </SelectContent>
                 </Select>
                 </div>
                 <div>
-                <Label htmlFor="buyerCustomer" className="block mb-1 text-sm font-medium">Buyer Customer*</Label>
-                <Select value={selectedBuyerCustomerId} onValueChange={setSelectedBuyerCustomerId} required>
-                    <SelectTrigger id="buyerCustomer"><SelectValue placeholder="Select buyer customer" /></SelectTrigger>
+                <Label htmlFor="modalBuyerCustomer" className="block mb-1 text-sm font-medium">Buyer Customer*</Label>
+                <Select value={selectedBuyerCustomerId} onValueChange={setSelectedBuyerCustomerId} required disabled={isLoadingCustomers}>
+                    <SelectTrigger id="modalBuyerCustomer"><SelectValue placeholder={isLoadingCustomers ? "Loading..." : "Select buyer"} /></SelectTrigger>
                     <SelectContent>
-                    {isLoadingCustomers && <SelectItem value="loading-cust" disabled>Loading customers...</SelectItem>}
-                    {!isLoadingCustomers && customers.length === 0 && <SelectItem value="no-cust" disabled>No customers found</SelectItem>}
                     {customers.map((c) => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
                     </SelectContent>
                 </Select>
                 </div>
                 <div>
-                <Label htmlFor="consigneeCustomer" className="block mb-1 text-sm font-medium">Consignee Customer*</Label>
-                <Select 
-                    value={selectedConsigneeCustomerId} 
-                    onValueChange={setSelectedConsigneeCustomerId}
-                    required
-                >
-                    <SelectTrigger id="consigneeCustomer">
-                    <SelectValue placeholder="Select consignee" />
-                    </SelectTrigger>
+                <Label htmlFor="modalConsigneeCustomer" className="block mb-1 text-sm font-medium">Consignee Customer*</Label>
+                <Select value={selectedConsigneeCustomerId} onValueChange={setSelectedConsigneeCustomerId} required disabled={isLoadingCustomers}>
+                    <SelectTrigger id="modalConsigneeCustomer"><SelectValue placeholder={isLoadingCustomers ? "Loading..." : "Select consignee"} /></SelectTrigger>
                     <SelectContent>
-                    {isLoadingCustomers && <SelectItem value="loading-consignee" disabled>Loading customers...</SelectItem>}
-                    {!isLoadingCustomers && customers.length === 0 && <SelectItem value="no-cust-consignee" disabled>No customers found</SelectItem>}
-                    {!isLoadingCustomers && customers.length > 0 && (
-                        <>
-                        <SelectItem
-                            value={SAME_AS_BUYER_OPTION_VALUE}
-                            disabled={!selectedBuyerCustomerId}
-                        >
-                            {selectedBuyerCustomerId && buyerCustomerName
-                            ? `Same as Buyer: ${buyerCustomerName}`
-                            : "Same as Buyer (Select Buyer first)"}
+                        <SelectItem value={SAME_AS_BUYER_OPTION_VALUE} disabled={!selectedBuyerCustomerId}>
+                            {selectedBuyerCustomerId && buyerCustomerName ? `Same as Buyer: ${buyerCustomerName}` : "Same as Buyer (Select Buyer first)"}
                         </SelectItem>
-                        {customers.map((c) => (
-                            <SelectItem key={`consignee-${c.id}`} value={String(c.id)}>
-                            {c.name}
-                            </SelectItem>
-                        ))}
-                        </>
-                    )}
+                        {customers.map((c) => (<SelectItem key={`consignee-${c.id}`} value={String(c.id)}>{c.name}</SelectItem>))}
                     </SelectContent>
                 </Select>
                 </div>
                 <div>
-                <Label htmlFor="invoiceDate" className="block mb-1 text-sm font-medium">Invoice Date*</Label>
-                <Input type="date" id="invoiceDate" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} required/>
+                <Label htmlFor="modalInvoiceDate" className="block mb-1 text-sm font-medium">Invoice Date*</Label>
+                <Input type="date" id="modalInvoiceDate" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} required/>
                 </div>
                 <div>
-                <Label htmlFor="dueDate" className="block mb-1 text-sm font-medium">Due Date*</Label>
-                <Input type="date" id="dueDate" value={dueDate} onChange={e => setDueDate(e.target.value)} required/>
+                <Label htmlFor="modalDueDate" className="block mb-1 text-sm font-medium">Due Date*</Label>
+                <Input type="date" id="modalDueDate" value={dueDate} onChange={e => setDueDate(e.target.value)} required/>
                 </div>
                 <div>
-                <Label htmlFor="doNumber" className="block mb-1 text-sm font-medium">DO Number</Label>
-                <Input type="text" id="doNumber" value={doNumber} onChange={e => setDoNumber(e.target.value)} placeholder="e.g. DO-XYZ-789" />
+                <Label htmlFor="modalDoNumber" className="block mb-1 text-sm font-medium">DO Number</Label>
+                <Input type="text" id="modalDoNumber" value={doNumber} onChange={e => setDoNumber(e.target.value)} placeholder="e.g. DO-XYZ-789" />
                 </div>
                 <div>
-                <Label htmlFor="doDate" className="block mb-1 text-sm font-medium">DO Date</Label>
-                <Input type="date" id="doDate" value={doDate} onChange={e => setDoDate(e.target.value)} />
+                <Label htmlFor="modalDoDate" className="block mb-1 text-sm font-medium">DO Date</Label>
+                <Input type="date" id="modalDoDate" value={doDate} onChange={e => setDoDate(e.target.value)} />
                 </div>
                 <div>
-                <Label htmlFor="truckNo" className="block mb-1 text-sm font-medium">Truck No</Label>
-                <Input type="text" id="truckNo" value={truckNo} onChange={e => setTruckNo(e.target.value)} placeholder="e.g. MH01AB1234" />
+                <Label htmlFor="modalTruckNo" className="block mb-1 text-sm font-medium">Truck No</Label>
+                <Input type="text" id="modalTruckNo" value={truckNo} onChange={e => setTruckNo(e.target.value)} placeholder="e.g. MH01AB1234" />
                 </div>
             </div>
 
@@ -591,28 +549,28 @@ export function InvoiceFormModal({ open, setOpen, onInvoiceCreated }: InvoiceFor
                     <h3 className="text-lg font-semibold mb-2">Charges</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <Label htmlFor="insuranceDesc">Insurance Description</Label>
-                            <Input id="insuranceDesc" value={charges.insurance_description} onChange={e => handleChargeChange('insurance_description', e.target.value)} placeholder="e.g. Transit Insurance"/>
+                            <Label htmlFor="modalInsuranceDesc">Insurance Description</Label>
+                            <Input id="modalInsuranceDesc" value={charges.insurance_description} onChange={e => handleChargeChange('insurance_description', e.target.value)} placeholder="e.g. Transit Insurance"/>
                         </div>
                         <div>
-                            <Label htmlFor="insuranceAmount">Insurance Amount</Label>
-                            <Input type="number" id="insuranceAmount" value={charges.insurance_amount} onChange={e => handleChargeChange('insurance_amount', e.target.value)} placeholder="0.00" className="text-right" />
+                            <Label htmlFor="modalInsuranceAmount">Insurance Amount</Label>
+                            <Input type="number" id="modalInsuranceAmount" value={charges.insurance_amount} onChange={e => handleChargeChange('insurance_amount', e.target.value)} placeholder="0.00" className="text-right" />
                         </div>
                         <div>
-                            <Label htmlFor="penaltyDesc">Penalty Description (Optional)</Label>
-                            <Input id="penaltyDesc" value={charges.penalty_description} onChange={e => handleChargeChange('penalty_description', e.target.value)} placeholder="e.g. Late Fee"/>
+                            <Label htmlFor="modalPenaltyDesc">Penalty Description (Optional)</Label>
+                            <Input id="modalPenaltyDesc" value={charges.penalty_description} onChange={e => handleChargeChange('penalty_description', e.target.value)} placeholder="e.g. Late Fee"/>
                         </div>
                         <div>
-                            <Label htmlFor="penaltyAmount">Penalty Amount</Label>
-                            <Input type="number" id="penaltyAmount" value={charges.penalty_amount} onChange={e => handleChargeChange('penalty_amount', e.target.value)} placeholder="0.00" className="text-right" />
+                            <Label htmlFor="modalPenaltyAmount">Penalty Amount</Label>
+                            <Input type="number" id="modalPenaltyAmount" value={charges.penalty_amount} onChange={e => handleChargeChange('penalty_amount', e.target.value)} placeholder="0.00" className="text-right" />
                         </div>
                         <div>
-                            <Label htmlFor="gstPct">GST %</Label>
-                            <Input type="number" id="gstPct" value={charges.gst_pct} onChange={e => handleChargeChange('gst_pct', e.target.value)} placeholder="e.g. 5" className="text-right" />
+                            <Label htmlFor="modalGstPct">GST %</Label>
+                            <Input type="number" id="modalGstPct" value={charges.gst_pct} onChange={e => handleChargeChange('gst_pct', e.target.value)} placeholder="e.g. 5" className="text-right" />
                         </div>
                         <div>
-                            <Label htmlFor="tdsPct">TDS %</Label>
-                            <Input type="number" id="tdsPct" value={charges.tds_pct} onChange={e => handleChargeChange('tds_pct', e.target.value)} placeholder="e.g. 1" className="text-right" />
+                            <Label htmlFor="modalTdsPct">TDS %</Label>
+                            <Input type="number" id="modalTdsPct" value={charges.tds_pct} onChange={e => handleChargeChange('tds_pct', e.target.value)} placeholder="e.g. 1" className="text-right" />
                         </div>
                     </div>
                 </div>
@@ -634,20 +592,20 @@ export function InvoiceFormModal({ open, setOpen, onInvoiceCreated }: InvoiceFor
                 {paymentDetails.map((payment, idx) => (
                 <div key={payment.id} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-3 mb-3 p-3 border rounded-md items-end">
                     <div>
-                    <Label htmlFor={`paymentDate-${idx}`}>Payment Date</Label>
-                    <Input type="date" id={`paymentDate-${idx}`} value={payment.payment_date} onChange={e => updatePaymentDetail(payment.id, "payment_date", e.target.value)} />
+                    <Label htmlFor={`modalPaymentDate-${idx}`}>Payment Date</Label>
+                    <Input type="date" id={`modalPaymentDate-${idx}`} value={payment.payment_date} onChange={e => updatePaymentDetail(payment.id, "payment_date", e.target.value)} />
                     </div>
                     <div>
-                    <Label htmlFor={`utrNo-${idx}`}>UTR No.</Label>
-                    <Input type="text" id={`utrNo-${idx}`} value={payment.utr_no} onChange={e => updatePaymentDetail(payment.id, "utr_no", e.target.value)} placeholder="UTR Number"/>
+                    <Label htmlFor={`modalUtrNo-${idx}`}>UTR No.</Label>
+                    <Input type="text" id={`modalUtrNo-${idx}`} value={payment.utr_no} onChange={e => updatePaymentDetail(payment.id, "utr_no", e.target.value)} placeholder="UTR Number"/>
                     </div>
                     <div>
-                    <Label htmlFor={`utrAmount-${idx}`}>UTR Amount</Label>
-                    <Input type="number" id={`utrAmount-${idx}`} value={payment.utr_amount} onChange={e => updatePaymentDetail(payment.id, "utr_amount", e.target.value)} placeholder="0.00" className="text-right"/>
+                    <Label htmlFor={`modalUtrAmount-${idx}`}>UTR Amount</Label>
+                    <Input type="number" id={`modalUtrAmount-${idx}`} value={payment.utr_amount} onChange={e => updatePaymentDetail(payment.id, "utr_amount", e.target.value)} placeholder="0.00" className="text-right"/>
                     </div>
                     <div>
-                    <Label htmlFor={`adjustAmount-${idx}`}>Adjust Amount</Label>
-                    <Input type="number" id={`adjustAmount-${idx}`} value={payment.adjust_amount} onChange={e => updatePaymentDetail(payment.id, "adjust_amount", e.target.value)} placeholder="0.00" className="text-right"/>
+                    <Label htmlFor={`modalAdjustAmount-${idx}`}>Adjust Amount</Label>
+                    <Input type="number" id={`modalAdjustAmount-${idx}`} value={payment.adjust_amount} onChange={e => updatePaymentDetail(payment.id, "adjust_amount", e.target.value)} placeholder="0.00" className="text-right"/>
                     </div>
                     <Button type="button" variant="ghost" size="icon" onClick={() => removePaymentDetail(payment.id)} aria-label="Remove payment detail">
                     <X className="h-4 w-4 text-gray-400 hover:text-red-600" />
@@ -685,10 +643,10 @@ export function InvoiceFormModal({ open, setOpen, onInvoiceCreated }: InvoiceFor
             {/* Actions Footer */}
             <div className="flex-shrink-0 bg-white border-t px-6 py-4 flex justify-end space-x-3 z-10">
             <DialogClose asChild>
-                <Button type="button" variant="outline" onClick={() => setOpen(false) } disabled={isSubmitting}>Cancel</Button>
+                <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>Cancel</Button>
             </DialogClose>
             <Button type="submit" disabled={!isFormValid() || isSubmitting}>
-                {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</> : "Save Delivery Order"}
+                {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</> : (isEditing ? "Update Order" : "Save Order")}
             </Button>
             </div>
         </form>
