@@ -8,6 +8,7 @@ import { useState } from 'react'; // Import useState
 import { usePathname } from 'next/navigation'; // Import usePathname
 import { MenuIcon } from 'lucide-react'; // Import MenuIcon
 import { Button } from "@/components/ui/button"; // Import Button
+import { ToastProvider } from '../contexts/ToastContext';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,6 +38,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased  h-screen`}
       >
+        <ToastProvider>
         <div className="flex h-full">
           {/* Sidebar */}
           <Sidebar activeLink={activeLink} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
@@ -64,6 +66,7 @@ export default function RootLayout({
           </div>
 
         </div>
+        </ToastProvider>
       </body>
     </html>
   );
