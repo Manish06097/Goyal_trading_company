@@ -5,6 +5,7 @@ import logging
 import shutil
 from io import BytesIO
 from typing import List # Ensure List is imported
+from datetime import date, datetime
 
 from fastapi import APIRouter, Request, Depends, HTTPException, status, UploadFile, File, Body
 from fastapi.responses import StreamingResponse, FileResponse
@@ -180,6 +181,7 @@ def create_delivery_order(delivery_order_data: schemas.DeliveryOrderCreate, db: 
     # Create DeliveryOrder instance (without nested items yet)
     do_dict = delivery_order_data.model_dump(exclude={'line_items', 'charges', 'payment_details', 'remarks'})
     db_delivery_order = models.DeliveryOrder(**do_dict)
+    db_delivery_order.invoice_date = delivery_order_data.invoice_date
 
     # Add LineItems
     for item_data in delivery_order_data.line_items:
@@ -267,7 +269,13 @@ def update_delivery_order(delivery_order_id: int, delivery_order_update: schemas
                         status_code=400,
                         detail=f"Invoice number '{new_invoice_number}' already exists for the target seller."
                     )
-            setattr(db_delivery_order, key, value)
+                    setattr(db_delivery_order, key, value)
+    
+        # Manually set invoice_date since it's not directly in the schema
+        db_delivery_order.invoice_date = delivery_order_update.invoice_date
+    
+        db.commit()
+        db.refresh(db_delivery_order)
 
     # Handle nested LineItems: Replace all existing if provided
     if delivery_order_update.line_items is not None: # Check if key is present, even if list is empty
@@ -319,6 +327,7 @@ def update_delivery_order(delivery_order_id: int, delivery_order_update: schemas
         db.refresh(db_delivery_order)
         # Eager load for the response
         return get_delivery_order_or_404(db, db_delivery_order.id, eager_load=True)
+
     except Exception as e:
         db.rollback()
         logger.error(f"Error updating delivery order {delivery_order_id}: {e}", exc_info=True)
@@ -388,6 +397,41 @@ async def generate_invoice(request: Request, invoice_data: dict = Body(...)): # 
         media_type="application/pdf",
         headers={"Content-Disposition": "inline; filename=invoice.pdf"},
     )
+
+# --- Invoice Number Generation Endpoint ---
+@router.get("/api/invoices/next_number", tags=["API - Invoice"])
+def get_next_invoice_number(db: Session = Depends(get_db)):
+    """
+    Generates the next invoice number based on the latest entry.
+    Format: DD-MM-YYYY-N
+    """
+    from datetime import date
+    import re
+
+    current_date = date.today()
+    current_date_str = current_date.strftime("%d-%m-%Y")
+
+    # Fetch the latest invoice entry
+    latest_invoice = db.query(models.DeliveryOrder).order_by(models.DeliveryOrder.id.desc()).first()
+
+    next_sequence_number = 1
+
+    if latest_invoice and latest_invoice.invoice_number:
+        # Parse the latest invoice number
+        match = re.match(r"(\d{2}-\d{2}-\d{4})-(\d+)", latest_invoice.invoice_number)
+        if match:
+            invoice_date_str, sequence_str = match.groups()
+            latest_invoice_date = datetime.strptime(invoice_date_str, "%d-%m-%Y").date()
+            latest_sequence_number = int(sequence_str)
+
+            # Compare dates
+            if latest_invoice_date == current_date:
+                next_sequence_number = latest_sequence_number + 1
+
+    new_invoice_number = f"{current_date_str}-{next_sequence_number}"
+
+    return {"next_invoice_number": new_invoice_number}
+
 
 # --- Image Upload Routes ---
 @router.post("/upload/image", tags=["Image Management"])

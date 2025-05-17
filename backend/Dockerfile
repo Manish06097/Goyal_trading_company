@@ -21,7 +21,8 @@ RUN apt-get update && apt-get install -y \
 
 # Install Python deps
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --prefix /app -r requirements.txt
+ENV PATH="/app/bin:$PATH"
 
 # Copy app code (for production builds)
 COPY . /app

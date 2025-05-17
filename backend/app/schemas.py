@@ -164,6 +164,7 @@ class DeliveryOrderBase(BaseModel):
     do_number: Optional[str] = None
     do_date: date = Field(default_factory=date.today) # Provide default for creation
     truck_no: Optional[str] = None
+    invoice_date: Optional[date] = None
     due_date: Optional[date] = None
     consignee_customer_id: Optional[int] = None
 
@@ -180,6 +181,7 @@ class DeliveryOrderUpdate(BaseModel): # More granular control for updates
     do_number: Optional[str] = None
     do_date: Optional[date] = None
     truck_no: Optional[str] = None
+    invoice_date: Optional[date] = None
     due_date: Optional[date] = None
     consignee_customer_id: Optional[int] = None
     # For nested items, we'll handle them in the route.

@@ -79,6 +79,7 @@ class DeliveryOrder(Base):
 
     do_number = Column(String, nullable=True, index=True)
     do_date = Column(Date, nullable=False, default=func.current_date())
+    invoice_date = Column(Date)
     truck_no = Column(String)
     due_date = Column(Date)
 
