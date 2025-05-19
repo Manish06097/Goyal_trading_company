@@ -369,9 +369,9 @@ async def generate_invoice(request: Request, delivery_order_id: int, db: Session
             "address": delivery_order.seller_company.address,
             "phone": delivery_order.seller_company.phone_number,
             "email": delivery_order.seller_company.email,
-            "gst_number": delivery_order.seller_company.gst_number,
-            "pan_number": delivery_order.seller_company.pan_number,
-            "tan_number": delivery_order.seller_company.tan_number,
+            "gstin": delivery_order.seller_company.gst_number,
+            "pan": delivery_order.seller_company.pan_number,
+            "tan": delivery_order.seller_company.tan_number,
             "logo": os.path.join(IMAGE_DIR, os.path.basename(delivery_order.seller_company.logo)) if delivery_order.seller_company.logo else None,
             "authorized_signature_image": os.path.join(IMAGE_DIR, os.path.basename(delivery_order.seller_company.authorized_signature_image)) if delivery_order.seller_company.authorized_signature_image else None,
 
