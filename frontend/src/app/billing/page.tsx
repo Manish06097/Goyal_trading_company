@@ -28,6 +28,7 @@ import { format, parseISO } from 'date-fns';
 import { useAppToast } from '../../contexts/ToastContext';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { DownloadIcon } from "lucide-react";
 
 // --- INTERFACES (Matching API Response for DeliveryOrder on the page) ---
 interface NestedCompany { id: number; name?: string; }
@@ -150,6 +151,32 @@ export default function BillingManagementPage() {
   const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
   const paginatedInvoices = filteredInvoices.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
+  const handleDownloadInvoice = async (invoiceId: number) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/invoice/generate/${invoiceId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/pdf',
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`Error generating invoice: ${response.statusText}`);
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `invoice_${invoiceId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      addToast('Invoice downloaded successfully!', 'success');
+    } catch (err: any) {
+      addToast(`Error: ${err.message}`, 'error');
+    }
+  };
+
   return (
     <div className="w-full p-6 md:p-8">
       <div className="mb-6">
@@ -197,6 +224,7 @@ export default function BillingManagementPage() {
                   <TableHead>Due Date</TableHead>
                   <TableHead className="text-right">Total Amount</TableHead>
                   <TableHead className="text-center">Actions</TableHead>
+                  <TableHead className="text-center">Download</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -239,6 +267,11 @@ export default function BillingManagementPage() {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleDownloadInvoice(invoice.id)} aria-label={`Download invoice ${invoice.invoice_number}`}>
+                        <DownloadIcon className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 );})}

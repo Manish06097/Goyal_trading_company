@@ -354,23 +354,80 @@ def create_customer_api(customer: schemas.CustomerCreate, db: Session = Depends(
         logger.error(f"Error saving customer via API: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to save customer: {e}")
 
-@router.post("/api/invoice/generate", tags=["API - PDF Generation"])
-async def generate_invoice(request: Request, invoice_data: dict = Body(...)): # Use Body for raw dict
-    # Build a context dict with defaults so nothing is ever undefined
+@router.post("/api/invoice/generate/{delivery_order_id}", tags=["API - PDF Generation"])
+async def generate_invoice(request: Request, delivery_order_id: int, db: Session = Depends(get_db)):
+    # Fetch delivery order from the database
+    delivery_order = get_delivery_order_or_404(db, delivery_order_id, eager_load=True)
+
+    # Build context for the template
     context = {
-        "seller":     invoice_data.get("seller", {}),
-        "order":      invoice_data.get("order", {}),
-        "buyer":      invoice_data.get("buyer", {}),
-        "consignee":  invoice_data.get("consignee", invoice_data.get("buyer", {})),
-        "items":      invoice_data.get("items", []),
-        "charges":    invoice_data.get("charges", {}),
-        "payment":    invoice_data.get("payment", {}), # This payment might be different from PaymentDetails
-        "remarks":    invoice_data.get("remarks", []),
+        "seller": {
+            "name": delivery_order.seller_company.name,
+            "address": delivery_order.seller_company.address,
+            "phone": delivery_order.seller_company.phone_number,
+            "email": delivery_order.seller_company.email,
+            "gst_number": delivery_order.seller_company.gst_number,
+            "pan_number": delivery_order.seller_company.pan_number,
+            "tan_number": delivery_order.seller_company.tan_number,
+            "logo": delivery_order.seller_company.logo,
+            "authorized_signature_image": delivery_order.seller_company.authorized_signature_image,
+
+        },
+        "order": {
+            "invoice_number": delivery_order.invoice_number,
+            "invoice_date": delivery_order.invoice_date,
+            "delivery_date": delivery_order.invoice_date,
+            "transport_number": delivery_order.truck_no,
+            "vehicle_number": delivery_order.truck_no,
+        },
+        "buyer": {
+            "name": delivery_order.buyer_customer.name,
+            "address": delivery_order.buyer_customer.address,
+            "phone": delivery_order.buyer_customer.phone,
+            "gstin": delivery_order.buyer_customer.gstin,
+            "tan": delivery_order.buyer_customer.tan,
+            "fssai": delivery_order.buyer_customer.fssai,
+
+
+        },
+        "consignee": {
+            "name": delivery_order.consignee_customer.name if delivery_order.consignee_customer else delivery_order.buyer_customer.name,
+            "address": delivery_order.consignee_customer.address if delivery_order.consignee_customer else delivery_order.buyer_customer.address,
+            "phone": delivery_order.consignee_customer.phone if delivery_order.consignee_customer else delivery_order.buyer_customer.phone,
+            "gstin": delivery_order.consignee_customer.gstin if delivery_order.consignee_customer else delivery_order.buyer_customer.gstin,
+            "tan": delivery_order.consignee_customer.tan if delivery_order.consignee_customer else delivery_order.buyer_customer.tan,
+            "fssai": delivery_order.consignee_customer.fssai if delivery_order.consignee_customer else delivery_order.buyer_customer.fssai,
+        },
+        "items": [{
+            "mill": item.mill,
+            "bargain_no": item.bargain_no,
+            "quality": item.quality,
+            "quantity_quintals": item.quantity_quintals,
+            "rate": item.rate,
+            "amount": item.amount,
+        } for item in delivery_order.line_items],
+        "charges": {
+            "insurance_amount": delivery_order.charges.insurance_amount if delivery_order.charges else 0,
+            "penalty_amount": delivery_order.charges.penalty_amount if delivery_order.charges else 0,
+            "tds_amount": delivery_order.charges.tds_amount if delivery_order.charges else 0,
+            "gst_amount": delivery_order.charges.gst_amount if delivery_order.charges else 0,
+            "tds_pct": delivery_order.charges.tds_pct if delivery_order.charges else 0,
+            "gst_pct": delivery_order.charges.gst_pct if delivery_order.charges else 0,
+            "total_invoice_amount": delivery_order.charges.total_invoice_amount if delivery_order.charges else 0,
+        } if delivery_order.charges else {},
+        "payment": {
+            "payment_terms": delivery_order.payment_details[0].payment_terms if delivery_order.payment_details else "",
+            "bank_name": delivery_order.payment_details[0].bank_name if delivery_order.payment_details else "",
+            "account_number": delivery_order.payment_details[0].account_number if delivery_order.payment_details else "",
+            "ifsc_code": delivery_order.payment_details[0].ifsc_code if delivery_order.payment_details and delivery_order.payment_details[0].ifsc_code else "",
+        } if delivery_order.payment_details else {},
+        "remarks": [remark.text for remark in delivery_order.remarks] if delivery_order.remarks else [],
     }
 
     # Load & render the styled template
     try:
         template = templates.env.get_template("invoice.html")
+        print(context)
         html_content = template.render(**context)
     except Exception as e:
         logger.error(f"Error rendering invoice template: {e}", exc_info=True)

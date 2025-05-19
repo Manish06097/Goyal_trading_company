@@ -48,28 +48,28 @@
     <table class="border-0">
       <tr class="border-0">
         <td class="border-0" style="width:20%">
-          <img src="{{ seller.logo_url | default('') }}" alt="Logo" class="logo">
+          <img src="{{ seller.logo | default('') }}" alt="Logo" class="logo">
         </td>
         <td class="border-0 text-center motto">
           &#x0950; ॐ राणी सतये नमः &#x0950;
         </td>
         <td class="border-0 text-right" style="width:30%; font-size:12px;">
-          <div>GSTIN : {{ seller.gstin    | default('N/A') }}</div>
-          <div>PAN   : {{ seller.pan      | default('N/A') }}</div>
-          <div>TAN   : {{ seller.tan      | default('N/A') }}</div>
+          <div>GSTIN : {{ seller.gstin    | default('') }}</div>
+          <div>PAN   : {{ seller.pan      | default('') }}</div>
+          <div>TAN   : {{ seller.tan      | default('') }}</div>
         </td>
       </tr>
     </table>
 
    <!-- Company banner -->
 <div class="bg-yellow border text-center p-8 mt-4">
-    <h2 class="mb-0">{{ seller.name | default('Shree Balaji Sugar Company') }}</h2>
+    <h2 class="mb-0">{{ seller.name | default('') }}</h2>
   </div>
   
   <!-- Address -->
   <p class="text-center mt-4 mb-0">
-    {{ seller.address  | default('Address not provided') }}<br>
-    Phone: {{ seller.phone | default('N/A') }} | Email: {{ seller.email | default('N/A') }}
+    {{ seller.address  | default('') }}<br>
+    Phone: {{ seller.phone | default('') }} | Email: {{ seller.email | default('') }}
   </p>
   
   <!-- Title -->
@@ -78,23 +78,23 @@
   <!-- DO info -->
   <table class="mt-4">
     <tr class="bg-yellow">
-      <td class="border p-8" style="width:50%;">DO No: {{ order.no | default('N/A') }}</td>
-      <td class="border p-8 text-right" style="width:50%;">DO Date: {{ order.date | default('N/A') }}</td>
+      <td class="border p-8" style="width:50%;">DO No: {{ order.invoice_number | default('') }}</td>
+      <td class="border p-8 text-right" style="width:50%;">DO Date: {{ order.invoice_date | default('') }}</td>
     </tr>
   </table>
-  
+
   <!-- To & Truck -->
   <table class="mt-4">
     <tr>
       <td class="no-border" style="width:65%; vertical-align: top;">
         <strong>To:</strong><br>
-        {{ buyer.name    | default('Unknown') }}<br>
-        {{ buyer.address | default('Address not provided') }}<br>
+        {{ buyer.name    | default('') }}<br>
+        {{ buyer.address | default('') }}<br>
         Dear Sir,
       </td>
       <td class="border bg-yellow p-8 text-center" style="width:35%; vertical-align: middle;">
         <strong>Truck No:</strong><br>
-        {{ order.truck_no | default('N/A') }}
+        {{ order.truck_no | default('') }}
       </td>
     </tr>
   </table>
@@ -102,7 +102,7 @@
   <!-- Instruction -->
   <p class="mt-4" style="margin-left: 15px;">
     On presentation of this delivery order, please give delivery of the following sugar against full payment. 
-    The sugar to be lifted and paid for till {{ order.due_date | default('N/A') }}.
+    The sugar to be lifted and paid for till {{ order.due_date | default('') }}.
   </p>
   
   <!-- Billed/Consignee -->
@@ -113,11 +113,11 @@
     </tr>
     <tr>
       <td>
-        <strong>{{ buyer.name | default('Unknown') }}</strong><br>
-        {{ buyer.address | default('Address not provided') }}<br>
-        GSTIN: {{ buyer.gstin | default('N/A') }}<br>
-        Phone: {{ buyer.phone | default('N/A') }}<br>
-        TAN:   {{ buyer.tan   | default('N/A') }}<br>
+        <strong>{{ buyer.name | default('') }}</strong><br>
+        {{ buyer.address | default('') }}<br>
+        GSTIN: {{ buyer.gstin | default('') }}<br>
+        Phone: {{ buyer.phone | default('') }}<br>
+        TAN:   {{ buyer.tan   | default('') }}<br>
         Under 194(Q): {{ buyer.under_194q | default('No') }}
       </td>
       <td>
@@ -142,37 +142,37 @@
     </tr>
     {% for item in items %}
     <tr>
-      <td>{{ item.mill ~ ' / ' ~ item.bargain_no | default('N/A') }}</td>
-      <td>{{ item.quality | default('N/A') }}</td>
-      <td class="text-center">{{ item.qty | default(0) }}</td>
+      <td>{{ item.mill ~ ' / ' ~ item.bargain_no | default('') }}</td>
+      <td>{{ item.quality | default('') }}</td>
+      <td class="text-center">{{ item.quantity_quintals | default(0) }}</td>
       <td class="text-right">{{ item.rate | default(0) }}</td>
       <td class="text-right">{{ item.amount | default(0) }}</td>
     </tr>
     {% endfor %}
     <tr>
       <td colspan="3"></td>
-      <td>Insurance Charges: {{ charges.insurance | default(0) }}</td>
-      <td class="text-right">{{ charges.insurance_amt | default(0) }}</td>
+      <td>Insurance Charges: {{ charges.insurance_description | default('') }}</td>
+      <td class="text-right">{{ charges.insurance_amount | default(0) }}</td>
     </tr>
     <tr>
       <td colspan="3"></td>
-      <td>Penalty: {{ charges.penalty | default(0) }}</td>
-      <td class="text-right">{{ charges.penalty_amt | default(0) }}</td>
+      <td>Penalty: {{ charges.penalty_description | default('') }}</td>
+      <td class="text-right">{{ charges.penalty_amount | default(0) }}</td>
     </tr>
     <tr>
       <td colspan="3"></td>
       <td>Less: TDS % {{ charges.tds_pct | default(0) }}</td>
-      <td class="text-right">{{ charges.tds_amt | default(0) }}</td>
+      <td class="text-right">{{ charges.tds_amount | default(0) }}</td>
     </tr>
     <tr>
       <td colspan="3"></td>
       <td>GST % {{ charges.gst_pct | default(0) }}</td>
-      <td class="text-right">{{ charges.gst_amt | default(0) }}</td>
+      <td class="text-right">{{ charges.gst_amount | default(0) }}</td>
     </tr>
     <tr class="bg-yellow">
       <td colspan="3"></td>
       <td><strong>Total Amount</strong></td>
-      <td class="text-right"><strong>{{ charges.total | default(0) }}</strong></td>
+      <td class="text-right"><strong>{{ charges.total_invoice_amount | default(0) }}</strong></td>
     </tr>
   </table>
   
@@ -185,7 +185,7 @@
       <th>Adjust Amt</th>
     </tr>
     <tr>
-      <td>{{ payment.date | default('') }}</td>
+      <td>{{ payment.payment_date | default('') }}</td>
       <td>{{ payment.utr_no | default('') }}</td>
       <td class="text-right">{{ payment.utr_amount | default(0) }}</td>
       <td class="text-right">{{ payment.adjust_amount | default(0) }}</td>
@@ -197,13 +197,13 @@
     <strong>Remarks:</strong> NOTE:
     <ol>
       {% for remark in remarks %}
-        <li>{{ remark }}</li>
+        <li>{{ remark.text | default('') }}</li>
       {% endfor %}
     </ol>
   </div>
   
   <div class="signature">
-    <div>{{ seller.name | default('Shree Balaji Sugar Company') }}</div>
+    <div>{{ seller.name | default('') }}</div>
     <div style="margin-top:24px;">
       Signature<br>Authorized Signatory
     </div>
@@ -211,4 +211,3 @@
   </div>
 </body>
 </html>
-
