@@ -235,7 +235,9 @@ def read_delivery_orders(skip: int = 0, limit: int = 100, db: Session = Depends(
 
 @router.get("/delivery_orders/{delivery_order_id}", response_model=schemas.DeliveryOrder)
 def read_delivery_order(delivery_order_id: int, db: Session = Depends(get_db)):
-    return get_delivery_order_or_404(db, delivery_order_id, eager_load=True)
+    delivery_order = get_delivery_order_or_404(db, delivery_order_id, eager_load=True)
+    print(f"Seller logo: {delivery_order.seller_company.logo}")
+    return delivery_order
 
 @router.put("/delivery_orders/{delivery_order_id}", response_model=schemas.DeliveryOrder)
 def update_delivery_order(delivery_order_id: int, delivery_order_update: schemas.DeliveryOrderUpdate, db: Session = Depends(get_db)):
@@ -273,7 +275,8 @@ def update_delivery_order(delivery_order_id: int, delivery_order_update: schemas
     
         # Manually set invoice_date since it's not directly in the schema
         db_delivery_order.invoice_date = delivery_order_update.invoice_date
-    
+        db_delivery_order.truck_no = delivery_order_update.truck_no
+
         db.commit()
         db.refresh(db_delivery_order)
 
@@ -369,15 +372,16 @@ async def generate_invoice(request: Request, delivery_order_id: int, db: Session
             "gst_number": delivery_order.seller_company.gst_number,
             "pan_number": delivery_order.seller_company.pan_number,
             "tan_number": delivery_order.seller_company.tan_number,
-            "logo": delivery_order.seller_company.logo,
-            "authorized_signature_image": delivery_order.seller_company.authorized_signature_image,
+            "logo": os.path.join(IMAGE_DIR, os.path.basename(delivery_order.seller_company.logo)) if delivery_order.seller_company.logo else None,
+            "authorized_signature_image": os.path.join(IMAGE_DIR, os.path.basename(delivery_order.seller_company.authorized_signature_image)) if delivery_order.seller_company.authorized_signature_image else None,
+
 
         },
         "order": {
             "invoice_number": delivery_order.invoice_number,
             "invoice_date": delivery_order.invoice_date,
             "delivery_date": delivery_order.invoice_date,
-            "transport_number": delivery_order.truck_no,
+            "truck_no": delivery_order.truck_no,
             "vehicle_number": delivery_order.truck_no,
         },
         "buyer": {
@@ -436,7 +440,7 @@ async def generate_invoice(request: Request, delivery_order_id: int, db: Session
 
     # Tell WeasyPrint where CSS/images live
     # Ensure this path is correct relative to where the app runs
-    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "templates"))
+    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     # If your static files are served from a different root, adjust base_url
     # For local static files referenced in HTML (like images, CSS), base_url is important.
     # Example: If invoice.html has <img src="logo.png">, WeasyPrint looks for templates/logo.png
