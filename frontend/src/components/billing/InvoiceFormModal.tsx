@@ -249,7 +249,16 @@ export function InvoiceFormModal({ open, setOpen, onInvoiceCreated, invoiceData 
   const addPaymentDetail = () => setPaymentDetails(prev => [...prev, { id: Date.now().toString(), payment_date: new Date().toISOString().substring(0,10), utr_no: "", utr_amount: "", adjust_amount: "" }]);
   const removePaymentDetail = (id: string) => setPaymentDetails(prev => prev.filter(item => item.id !== id));
   const updatePaymentDetail = <K extends keyof PaymentDetailForm>(id: string, field: K, value: string) => { setPaymentDetails(prev => prev.map(item => item.id === id ? { ...item, [field]: (field === "utr_amount" || field === "adjust_amount" ? parseNumericInput(value) : value) as PaymentDetailForm[K] } : item)); };
-  const addRemark = () => setRemarks(prev => [...prev, { id: Date.now().toString(), text: "" }]);
+
+  const predefinedRemarks = [
+    "Due date given here will not be extended",
+    "Payment liability and responsibility of buyer",
+    "Truck/mode of transport is arranged by buyer, we are not responsible for transportation",
+    "Party will be responsible for all the consequence & damages imposed by company on non lifting of sugar",
+    "We will not responsible for any claim & damages one sugar is lifted from godown /factory",
+  ];
+
+  const addRemark = () => setRemarks(prev => [...prev, { id: Date.now().toString(), text: predefinedRemarks[0] || "" }]);
   const removeRemark = (id: string) => setRemarks(prev => prev.filter(item => item.id !== id));
   const updateRemark = (id: string, text: string) => setRemarks(prev => prev.map(item => item.id === id ? { ...item, text } : item));
 
@@ -415,12 +424,44 @@ export function InvoiceFormModal({ open, setOpen, onInvoiceCreated, invoiceData 
                 <Button type="button" variant="outline" className="w-full mt-1" onClick={addPaymentDetail}><Plus className="h-4 w-4 mr-2" /> Add Payment Detail</Button>
             </div>
             <div className="pt-4">
-                <h3 className="text-lg font-semibold mb-2">Remarks</h3>
-                {remarks.map((remark, idx) => ( <div key={remark.id} className="flex gap-3 mb-2 items-start"> <Textarea value={remark.text} onChange={e => updateRemark(remark.id, e.target.value)} placeholder={`Remark ${idx + 1}`} rows={2} className="flex-grow" /> <Button type="button" variant="ghost" size="icon" onClick={() => removeRemark(remark.id)} aria-label="Remove remark" className="mt-1"><X className="h-4 w-4 text-gray-400 hover:text-red-600" /></Button> </div> ))}
-                <Button type="button" variant="outline" className="w-full mt-1" onClick={addRemark}><Plus className="h-4 w-4 mr-2" /> Add Remark</Button>
+              <h3 className="text-lg font-semibold mb-2">Remarks</h3>
+              {remarks.map((remark, idx) => (
+                <div key={remark.id} className="flex gap-3 mb-2 items-start">
+                  <Select value={remark.text} onValueChange={(value) => updateRemark(remark.id, value)}>
+                    <SelectTrigger className="w-[350px]">
+                      <SelectValue placeholder={`Remark ${idx + 1}`} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {predefinedRemarks.map((text) => (
+                        <SelectItem key={text} value={text}>
+                          {text}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeRemark(remark.id)}
+                    aria-label="Remove remark"
+                    className="mt-1"
+                  >
+                    <X className="h-4 w-4 text-gray-400 hover:text-red-600" />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full mt-1"
+                onClick={addRemark}
+              >
+                <Plus className="h-4 w-4 mr-2" /> Add Remark
+              </Button>
             </div>
-            </div>
-            <div className="flex-shrink-0 bg-white border-t px-6 py-4 flex justify-end space-x-3 z-10">
+          </div>
+          <div className="flex-shrink-0 bg-white border-t px-6 py-4 flex justify-end space-x-3 z-10">
               <DialogClose asChild><Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>Cancel</Button></DialogClose>
               <Button type="submit" disabled={!isFormValid() || isSubmitting || isFetchingNextNumber}>
                   {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</> : (isEditing ? "Update Order" : "Save Order")}

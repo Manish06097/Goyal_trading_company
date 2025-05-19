@@ -420,10 +420,10 @@ async def generate_invoice(request: Request, delivery_order_id: int, db: Session
             "total_invoice_amount": delivery_order.charges.total_invoice_amount if delivery_order.charges else 0,
         } if delivery_order.charges else {},
         "payment": {
-            "payment_terms": delivery_order.payment_details[0].payment_terms if delivery_order.payment_details else "",
-            "bank_name": delivery_order.payment_details[0].bank_name if delivery_order.payment_details else "",
-            "account_number": delivery_order.payment_details[0].account_number if delivery_order.payment_details else "",
-            "ifsc_code": delivery_order.payment_details[0].ifsc_code if delivery_order.payment_details and delivery_order.payment_details[0].ifsc_code else "",
+            "payment_date": delivery_order.payment_details[0].payment_date if delivery_order.payment_details else "",
+            "utr_no": delivery_order.payment_details[0].utr_no if delivery_order.payment_details else "",
+            "utr_amount": delivery_order.payment_details[0].utr_amount if delivery_order.payment_details else "",
+            "adjust_amount": delivery_order.payment_details[0].adjust_amount if delivery_order.payment_details and delivery_order.payment_details[0].adjust_amount else "",
         } if delivery_order.payment_details else {},
         "remarks": [remark.text for remark in delivery_order.remarks] if delivery_order.remarks else [],
     }

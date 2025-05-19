@@ -5,11 +5,11 @@
   <title>Delivery Order</title>
   <style>
     /* A4 page settings */
-    @page { size: A4; margin: 12mm; } /* Reduced page margin */
+    @page { size: A4; margin: 10mm; } /* Further reduced page margin */
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-      font-size: 9.5pt; /* Slightly reduced base font */
-      line-height: 1.4; /* Slightly reduced line height */
+      font-size: 9pt; /* Further reduced base font */
+      line-height: 1.3; /* Further reduced line height */
       color: #333;
       margin: 0;
     }
@@ -21,72 +21,73 @@
     .text-right  { text-align: right; }
     .text-left   { text-align: left; }
     .font-bold { font-weight: bold; }
-    /* Reduced margin utilities if needed, or apply directly */
-    .mt-1 { margin-top: 3px; }
-    .mt-2 { margin-top: 6px; }
-    .mt-3 { margin-top: 10px; } /* Was 16px */
-    .mb-1 { margin-bottom: 3px; }
-    .mb-2 { margin-bottom: 6px; }
-    .mb-3 { margin-bottom: 10px; } /* Was 16px */
+    
+    .mt-1 { margin-top: 2px; }
+    .mt-2 { margin-top: 4px; }
+    .mt-3 { margin-top: 6px; } 
+    .mb-1 { margin-bottom: 2px; }
+    .mb-2 { margin-bottom: 4px; }
+    .mb-3 { margin-bottom: 6px; } 
     .mb-0 { margin-bottom: 0; }
-    .p-1 { padding: 3px; }
-    .p-2 { padding: 6px; } /* Was 8px */
+    .p-1 { padding: 2px; } 
+    .p-2 { padding: 4px; } 
 
     .header-flex {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      border-bottom: 1px solid #eee; /* Lighter border */
-      padding-bottom: 8px; /* Reduced */
-      margin-bottom: 10px; /* Reduced */
+      border-bottom: 1px solid #eee; 
+      padding-bottom: 5px; /* Reduced */
+      margin-bottom: 6px; /* Reduced */
     }
     .header-flex .logo-area {
-      width: 25%; /* Adjusted for larger logo if needed */
+      width: 25%; 
     }
     .header-flex .motto-area {
-      width: 45%; /* Adjusted */
+      width: 45%; 
       text-align: center;
-      font-size: 12pt; /* Slightly reduced */
+      font-size: 11pt; /* Reduced */
       color: #555;
-      padding-top: 5px; /* Reduced */
+      padding-top: 3px; /* Reduced */
+      line-height: 1.2;
     }
     .header-flex .tax-info {
       width: 30%;
       text-align: right;
-      font-size: 8.5pt; /* Slightly reduced */
-      line-height: 1.3;
+      font-size: 7.5pt; /* Reduced */
+      line-height: 1.25;
     }
     .logo {
-      max-width: 120px; /* Increased */
-      max-height: 70px; /* Increased */
+      max-width: 120px; 
+      max-height: 70px; 
     }
 
     .company-banner {
       background-color: #f8f9fa;
       border: 1px solid #dee2e6;
-      padding: 10px; /* Reduced */
+      padding: 6px; /* Reduced */
       text-align: center;
-      margin-top: 10px; /* Reduced */
+      margin-top: 6px; /* Reduced */
     }
     .company-banner h2 {
       margin: 0;
-      font-size: 16pt; /* Slightly reduced */
+      font-size: 14pt; /* Reduced */
       color: #2c3e50;
     }
     .company-address {
       text-align: center;
-      margin-top: 6px; /* Reduced */
-      margin-bottom: 10px; /* Reduced */
-      font-size: 8.5pt; /* Slightly reduced */
+      margin-top: 4px; /* Reduced */
+      margin-bottom: 6px; /* Reduced */
+      font-size: 8pt; /* Reduced */
       color: #555;
-      line-height: 1.3;
+      line-height: 1.25;
     }
 
     .document-title {
       text-align: center;
-      margin-top: 10px; /* Reduced */
-      margin-bottom: 6px; /* Reduced */
-      font-size: 14pt; /* Slightly reduced */
+      margin-top: 6px; /* Reduced */
+      margin-bottom: 4px; /* Reduced */
+      font-size: 13pt; /* Reduced */
       font-weight: bold;
       color: #333;
       text-transform: uppercase;
@@ -96,20 +97,20 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 10px; /* Reduced */
+      margin-top: 6px; /* Reduced */
     }
     th, td {
       border: 1px solid #ddd;
-      padding: 5px; /* Reduced */
+      padding: 3px 4px; /* Reduced */
       vertical-align: top;
-      font-size: 9pt; /* Ensure table text is consistent */
+      font-size: 8.5pt; /* Ensure table text is consistent and small */
     }
     th {
       background-color: #e9ecef;
       font-weight: bold;
       text-align: left;
       color: #495057;
-      padding: 6px 5px;
+      padding: 4px 4px; /* Reduced */
     }
     
     .table-shaded-header th {
@@ -121,17 +122,18 @@
         border: 1px solid #e0e0e0;
     }
     .info-table th { /* For DO No / DO Date row */
-        padding: 6px;
+        padding: 4px; /* Reduced */
     }
 
 
     .item-table th {
       text-align: center;
-      padding: 5px;
+      padding: 3px 4px; /* Reduced */
     }
     .item-table td {
       text-align: left;
-      padding: 4px 5px; /* Fine tune padding for item rows */
+      padding: 3px 4px; /* Reduced */
+      line-height: 1.2;
     }
     .item-table .number {
       text-align: right;
@@ -143,93 +145,94 @@
 
     .totals-section td {
       font-weight: normal;
-      padding: 4px 5px; /* Reduced */
+      padding: 3px 4px; /* Reduced */
     }
     .totals-section .total-label {
       text-align: right;
       font-weight: bold;
-      padding-right: 8px;
+      padding-right: 5px; /* Reduced */
     }
     .totals-section .final-total .total-label,
     .totals-section .final-total .number {
         font-weight: bold;
-        font-size: 10pt; /* Slightly reduced */
+        font-size: 9.5pt; /* Reduced */
         background-color: #e9ecef;
-        padding: 5px;
+        padding: 4px; /* Reduced */
     }
 
 
     .address-box {
-      padding: 6px; /* Reduced */
+      padding: 4px; /* Reduced */
       border: 1px solid #eee;
-      min-height: 75px; /* Reduced, adjust based on typical address length */
+      min-height: 65px; /* Reduced, adjust based on typical address length */
       background-color: #fcfdff;
-      line-height: 1.3;
+      line-height: 1.25;
+      font-size: 8.5pt;
     }
     .address-box strong {
         display: block;
-        margin-bottom: 3px;
+        margin-bottom: 2px; /* Reduced */
         color: #0366d6;
     }
     .instruction-paragraph {
-        margin-top: 8px; /* Reduced */
-        margin-bottom: 8px; /* Reduced */
-        padding: 6px; /* Reduced */
+        margin-top: 5px; /* Reduced */
+        margin-bottom: 5px; /* Reduced */
+        padding: 4px; /* Reduced */
         border: 1px solid #eee;
         background-color: #f9f9f9;
-        font-size: 9pt;
-        line-height: 1.3;
+        font-size: 8.5pt; /* Reduced */
+        line-height: 1.25;
     }
 
 
     .notes-section {
-      margin-top: 10px; /* Reduced */
-      padding: 6px 8px; /* Reduced */
+      margin-top: 6px; /* Reduced */
+      padding: 4px 6px; /* Reduced */
       border: 1px solid #eee;
       background-color: #f9f9f9;
-      font-size: 8.5pt; /* Slightly reduced */
+      font-size: 8pt; /* Reduced */
     }
-    .notes-section strong { display: block; margin-bottom: 3px; }
-    .notes-section ol { padding-left: 18px; margin: 0; }
-    .notes-section ol li { margin-bottom: 2px; line-height: 1.3; }
+    .notes-section strong { display: block; margin-bottom: 2px; }
+    .notes-section ol { padding-left: 15px; margin: 0; } /* Reduced padding */
+    .notes-section ol li { margin-bottom: 1px; line-height: 1.2; }
 
     .signature-area {
-      margin-top: 15px; /* Significantly reduced */
+      margin-top: 10px; /* Significantly reduced */
       text-align: right;
     }
-    .signature-content { /* Wrapper to center content if signature area is full width */
+    .signature-content { 
         display: inline-block; 
         text-align: center;
     }
-    .signature-content strong { /* For Seller Name */
+    .signature-content strong { 
         display:block; 
-        margin-bottom: 4px;
-        font-size: 9.5pt;
+        margin-bottom: 3px; /* Reduced */
+        font-size: 9pt; /* Reduced */
     }
-    .signature-image-container { /* New class for the div holding image/line */
-        margin-top: 5px;
-        margin-bottom: 2px;
-        height: 75px; /* To accommodate larger sig + small margin */
-        display: flex; /* For centering image/line */
+    .signature-image-container { 
+        margin-top: 2px; /* Reduced */
+        margin-bottom: 1px; /* Reduced */
+        height: 60px; /* Reduced */
+        display: flex; 
         align-items: center;
         justify-content: center;
     }
     .signature-area img {
-        max-width: 180px; /* Increased */
-        max-height: 70px; /* Increased */
+        max-width: 180px; 
+        max-height: 55px; /* Slightly reduced height */
         display: block;
     }
     .signature-line {
         border-bottom: 1px solid #555;
-        width: 180px; /* Match image max-width */
-        margin: 0 auto; /* Centered within its container */
+        width: 180px; 
+        margin: 0 auto; 
     }
     .authorized-signatory {
       text-align: center;
       display: block;
       margin: 0 auto;
-      width: 180px; /* Match signature line/image width */
-      font-size: 9pt;
+      width: 180px; 
+      font-size: 8.5pt; /* Reduced */
     }
 
     .no-border { border: none !important; }
@@ -242,7 +245,7 @@
         {% if seller.logo %}
           <img src="{{ seller.logo }}" alt="Logo" class="logo">
         {% else %}
-          <div style="width:100px; height:60px; border:1px dashed #ccc; display:flex; align-items:center; justify-content:center; font-size:9pt; color:#aaa;">Logo</div>
+          <div style="width:100px; height:60px; border:1px dashed #ccc; display:flex; align-items:center; justify-content:center; font-size:8pt; color:#aaa;">Logo</div>
         {% endif %}
       </div>
       <div class="motto-area">
@@ -274,7 +277,7 @@
       </thead>
     </table>
 
-    <table class="info-table" style="margin-top: 8px;"> <!-- Reduced top margin for this table -->
+    <table class="info-table" style="margin-top: 5px;"> <!-- Reduced top margin for this table -->
         <tr>
             <td style="width:65%; vertical-align: top;" class="address-box">
                 <strong>To:</strong>
@@ -283,8 +286,8 @@
                 Dear Sir,
             </td>
             <td style="width:35%; vertical-align: middle; text-align: center;" class="bg-highlight">
-                <strong style="display:block; margin-bottom:4px; font-size:9.5pt;">Truck No:</strong>
-                <span style="font-size: 12pt; font-weight:bold;">{{ order.truck_no | default('N/A') }}</span>
+                <strong style="display:block; margin-bottom:3px; font-size:9pt;">Truck No:</strong>
+                <span style="font-size: 11pt; font-weight:bold;">{{ order.truck_no | default('N/A') }}</span>
             </td>
         </tr>
     </table>
@@ -294,7 +297,7 @@
       The sugar to be lifted and paid for till {{ order.due_date | default('N/A') }}.
     </p>
   
-    <table class="info-table">
+    <table class="info-table" style="margin-top: 5px;"> <!-- Reduced top margin for this table -->
       <thead>
         <tr class="table-shaded-header">
           <th style="width:50%;">Billed to - Place of Supply</th>
@@ -323,7 +326,7 @@
       </tbody>
     </table>
   
-    <table class="item-table" style="margin-top: 8px;">
+    <table class="item-table" style="margin-top: 5px;"> <!-- Reduced top margin for this table -->
       <thead>
         <tr class="table-shaded-header">
           <th>Mill / Bargain No</th>
@@ -344,7 +347,7 @@
         </tr>
         {% else %}
         <tr>
-            <td colspan="5" class="text-center p-2">No items listed.</td>
+            <td colspan="5" class="text-center p-1">No items listed.</td> <!-- p-1 for less padding -->
         </tr>
         {% endfor %}
       </tbody>
@@ -378,7 +381,7 @@
       </tfoot>
     </table>
   
-    <table class="info-table" style="margin-top: 8px;">
+    <table class="info-table" style="margin-top: 5px;"> <!-- Reduced top margin for this table -->
       <thead>
         <tr class="table-shaded-header">
           <th>Payment Date</th>
@@ -396,7 +399,7 @@
         </tr>
          {% if not payment.payment_date and not payment.utr_no %}
         <tr>
-            <td colspan="4" class="text-center p-1" style="font-style: italic; color: #777;">No payment details.</td>
+            <td colspan="4" class="text-center p-1" style="font-style: italic; color: #777; padding: 2px;">No payment details.</td> <!-- Ensure small padding here -->
         </tr>
         {% endif %}
       </tbody>
@@ -407,7 +410,7 @@
       {% if remarks and remarks | length > 0 %}
       <ol>
         {% for remark in remarks %}
-          <li>{{ remark.text | default('') }}</li>
+          <li>{{ remark | default('') }}</li>
         {% endfor %}
       </ol>
       {% else %}
